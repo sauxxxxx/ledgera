@@ -4189,6 +4189,266 @@ input {
   background: rgba(255, 255, 255, 0.96);
 }
 
+.admin-workspace-view {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 16px;
+  overflow: hidden;
+}
+
+.admin-workspace-shell,
+.admin-two-column-grid {
+  min-height: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-workspace-shell {
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.72fr);
+}
+
+.admin-two-column-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-workspace-main,
+.admin-side-stack {
+  min-height: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.admin-workspace-main {
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 28px rgba(99, 94, 131, 0.05);
+  overflow: hidden;
+}
+
+.admin-side-stack {
+  align-content: start;
+}
+
+.admin-panel-compact {
+  gap: 12px;
+}
+
+.admin-filter-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-filter-grid-two {
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+}
+
+.admin-filter-grid-single {
+  grid-template-columns: minmax(180px, 220px);
+  justify-content: end;
+}
+
+.admin-toolbar-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-toolbar-copy strong {
+  color: #2f3345;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.admin-toolbar-copy span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.admin-primary-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-primary-cell strong {
+  color: #232537;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-primary-cell span {
+  color: #858ca0;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.admin-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.69rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.admin-pill-role-admin,
+.admin-pill-module {
+  background: rgba(122, 92, 255, 0.1);
+  color: var(--blue-dark);
+}
+
+.admin-pill-role-finance {
+  background: rgba(47, 108, 241, 0.1);
+  color: #2559c7;
+}
+
+.admin-pill-role-operations {
+  background: rgba(49, 178, 107, 0.12);
+  color: #228b56;
+}
+
+.admin-pill-role-readonly {
+  background: rgba(160, 168, 186, 0.14);
+  color: #6f7688;
+}
+
+.admin-pill-status-active,
+.admin-pill-stage-live,
+.admin-pill-status-current {
+  background: rgba(49, 178, 107, 0.12);
+  color: #228b56;
+}
+
+.admin-pill-status-invited,
+.admin-pill-status-review-due {
+  background: rgba(199, 154, 52, 0.12);
+  color: #a06c14;
+}
+
+.admin-pill-status-suspended,
+.admin-pill-status-planned,
+.admin-pill-stage-planned {
+  background: rgba(160, 168, 186, 0.14);
+  color: #6f7688;
+}
+
+.admin-card-stack,
+.admin-bullet-list,
+.admin-toggle-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-role-card,
+.admin-module-card {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  gap: 10px;
+}
+
+.admin-role-card-head,
+.admin-module-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-role-card-head strong,
+.admin-module-card-head strong {
+  color: #232537;
+  font-size: 0.83rem;
+  font-weight: 600;
+}
+
+.admin-role-card-head span {
+  color: #858ca0;
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.admin-role-card p,
+.admin-module-card p {
+  margin: 0;
+  color: #6f768b;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.admin-toggle-row {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.admin-toggle-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(122, 92, 255, 0.14);
+}
+
+.admin-toggle-row-enabled {
+  border-color: rgba(122, 92, 255, 0.18);
+  background: rgba(122, 92, 255, 0.05);
+}
+
+.admin-toggle-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.admin-toggle-copy strong {
+  color: #232537;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.admin-toggle-copy span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.55;
+}
+
+.admin-toggle-control {
+  width: 46px;
+  height: 26px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(160, 168, 186, 0.24);
+  display: flex;
+  align-items: center;
+  transition: background-color 160ms ease;
+}
+
+.admin-toggle-control-enabled {
+  background: rgba(122, 92, 255, 0.28);
+}
+
+.admin-toggle-knob {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 6px 12px rgba(43, 39, 71, 0.12);
+  transition: transform 160ms ease;
+}
+
+.admin-toggle-control-enabled .admin-toggle-knob {
+  transform: translateX(20px);
+}
+
 @keyframes chartSheetFrameIn {
   from {
     opacity: 0;
@@ -4536,6 +4796,10 @@ input {
     overflow: visible;
   }
 
+  .admin-workspace-view {
+    overflow: visible;
+  }
+
   .chart-accounts-header {
     flex-direction: column;
     align-items: flex-start;
@@ -4545,12 +4809,22 @@ input {
     grid-template-columns: 1fr;
   }
 
+  .admin-workspace-shell,
+  .admin-two-column-grid {
+    grid-template-columns: 1fr;
+  }
+
   .chart-accounts-header-actions,
-  .chart-accounts-filters {
+  .chart-accounts-filters,
+  .admin-filter-grid-single {
     width: 100%;
   }
 
   .chart-accounts-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-filter-grid-two {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -4652,10 +4926,17 @@ input {
   .chart-bulkbar,
   .chart-bulkbar-actions,
   .chart-inspector-head,
-  .chart-inspector-footer {
+  .chart-inspector-footer,
+  .admin-role-card-head,
+  .admin-module-card-head {
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-filter-grid-two,
+  .admin-filter-grid-single {
+    grid-template-columns: 1fr;
   }
 
   .chart-table-panel {

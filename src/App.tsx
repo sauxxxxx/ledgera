@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from "react";
+import { AdminWorkspaceRouter } from "./admin/AdminWorkspaceViews";
 
 const MOCK_SESSION_KEY = "ledgera.dev.mock-session";
 const SIDEBAR_PREFERENCES_KEY = "ledgera.dashboard-sidebar";
@@ -24,7 +25,14 @@ type AuthTransitionState = {
   title: string;
 };
 
-type WorkspaceView = "chart-of-accounts" | "company-profile";
+type WorkspaceView =
+  | "chart-of-accounts"
+  | "company-profile"
+  | "users-roles"
+  | "system-settings"
+  | "audit-trail"
+  | "customization"
+  | "contribution-tables";
 
 type SidebarIconKind =
   | "overview"
@@ -138,6 +146,7 @@ type StandardChartPreset = {
   id: string;
   label: string;
 };
+
 
 const defaultSidebarPreferences: SidebarPreferences = {
   collapsed: false,
@@ -1504,11 +1513,11 @@ const sidebarSections: SidebarSection[] = [
         label: "Admin",
         children: [
           { id: "company-profile", label: "Company Profile" },
-          { label: "Users & Roles" },
-          { label: "System Settings" },
-          { label: "Audit Trail" },
-          { label: "Customization" },
-          { label: "Contribution Tables" }
+          { id: "users-roles", label: "Users & Roles" },
+          { id: "system-settings", label: "System Settings" },
+          { id: "audit-trail", label: "Audit Trail" },
+          { id: "customization", label: "Customization" },
+          { id: "contribution-tables", label: "Contribution Tables" }
         ]
       }
     ]
@@ -3956,6 +3965,56 @@ function CompanySetupScreen({
   if (setupComplete) {
     if (activeWorkspaceView === "chart-of-accounts") {
       return <ChartOfAccountsView companyName={formData.workspaceName} />;
+    }
+
+    if (activeWorkspaceView === "users-roles") {
+      return (
+        <AdminWorkspaceRouter
+          companyName={formData.workspaceName}
+          view="users-roles"
+          components={{ CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "system-settings") {
+      return (
+        <AdminWorkspaceRouter
+          companyName={formData.workspaceName}
+          view="system-settings"
+          components={{ CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "audit-trail") {
+      return (
+        <AdminWorkspaceRouter
+          companyName={formData.workspaceName}
+          view="audit-trail"
+          components={{ CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "customization") {
+      return (
+        <AdminWorkspaceRouter
+          companyName={formData.workspaceName}
+          view="customization"
+          components={{ CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "contribution-tables") {
+      return (
+        <AdminWorkspaceRouter
+          companyName={formData.workspaceName}
+          view="contribution-tables"
+          components={{ CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
     }
 
     return (
