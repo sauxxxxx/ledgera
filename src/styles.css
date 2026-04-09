@@ -3270,7 +3270,8 @@ input {
 
 .chart-accounts-shell {
   min-height: 0;
-  display: block;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   overflow: hidden;
 }
 
@@ -3285,6 +3286,7 @@ input {
 
 .chart-accounts-main {
   display: grid;
+  height: 100%;
   grid-template-rows: auto auto minmax(0, 1fr);
   overflow: hidden;
 }
@@ -3330,10 +3332,151 @@ input {
   color: #9aa0b3;
 }
 
+.chart-accounts-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.chart-filter-popover {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.chart-filter-trigger {
+  height: 40px;
+  min-width: 104px;
+  padding: 0 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #313547;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.chart-filter-trigger:hover {
+  transform: translateY(-1px);
+  border-color: rgba(122, 92, 255, 0.2);
+}
+
+.chart-filter-trigger-active,
+.chart-filter-popover-open .chart-filter-trigger {
+  border-color: rgba(122, 92, 255, 0.18);
+  background: rgba(122, 92, 255, 0.06);
+  color: var(--blue-dark);
+}
+
+.chart-filter-button-icon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-filter-trigger-count {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(122, 92, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.chart-filter-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 8;
+  width: min(420px, calc(100vw - 72px));
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.985);
+  box-shadow: 0 26px 60px rgba(48, 43, 79, 0.18);
+  display: grid;
+  gap: 14px;
+}
+
+.chart-filter-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chart-filter-panel-head div {
+  display: grid;
+  gap: 4px;
+}
+
+.chart-filter-panel-head strong {
+  color: #232537;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.chart-filter-panel-head span {
+  color: #7f8599;
+  font-size: 0.73rem;
+  line-height: 1.55;
+}
+
+.chart-filter-clear {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #5c627a;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: border-color 160ms ease, color 160ms ease, background-color 160ms ease;
+}
+
+.chart-filter-clear:hover {
+  border-color: rgba(122, 92, 255, 0.22);
+  color: var(--blue-dark);
+  background: rgba(122, 92, 255, 0.05);
+}
+
 .chart-accounts-filters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.chart-accounts-filters .setup-field {
+  gap: 7px;
+}
+
+.chart-accounts-filters .setup-field-label {
+  color: #72798f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.chart-sort-select {
+  width: min(190px, 100%);
+  flex: 0 0 auto;
 }
 
 .chart-bulkbar {
@@ -5553,13 +5696,18 @@ input {
   }
 
   .chart-accounts-header-actions,
-  .chart-accounts-filters,
+  .chart-accounts-toolbar-actions,
   .admin-filter-grid-single {
     width: 100%;
   }
 
-  .chart-accounts-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .chart-accounts-toolbar-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .chart-filter-panel {
+    width: min(420px, calc(100vw - 84px));
   }
 
   .admin-filter-grid-two {
@@ -5662,12 +5810,12 @@ input {
     justify-items: start;
   }
 
-  .chart-accounts-summary,
   .chart-accounts-filters {
     grid-template-columns: 1fr;
   }
 
   .chart-accounts-header-actions,
+  .chart-accounts-toolbar-actions,
   .chart-bulkbar,
   .chart-bulkbar-actions,
   .chart-inspector-head,
@@ -5714,6 +5862,18 @@ input {
   .chart-inspector-drawer {
     width: 100%;
     border-radius: 5px;
+  }
+
+  .chart-filter-popover,
+  .chart-sort-select,
+  .chart-filter-trigger {
+    width: 100%;
+  }
+
+  .chart-filter-panel {
+    left: 0;
+    right: auto;
+    width: min(100%, calc(100vw - 32px));
   }
 
   .chart-inspector-head-top,

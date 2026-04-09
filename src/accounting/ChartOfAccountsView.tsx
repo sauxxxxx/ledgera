@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 type SelectOption = {
   label: string;
@@ -383,6 +383,16 @@ const chartStandardPresets: StandardChartPreset[] = [
   }
 ];
 
+function FilterButtonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="chart-filter-button-icon">
+      <path d="M4.75 6.75h14.5" />
+      <path d="M7.5 11.75h9" />
+      <path d="M10 16.75h4" />
+    </svg>
+  );
+}
+
 export function ChartOfAccountsWorkspace({
   companyName,
   components
@@ -397,6 +407,7 @@ export function ChartOfAccountsWorkspace({
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("code");
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [editingAccount, setEditingAccount] = useState<ChartAccount | null>(null);
@@ -405,6 +416,7 @@ export function ChartOfAccountsWorkspace({
   const [standardChartMode, setStandardChartMode] = useState<StandardChartMode>("merge");
   const [standardChartDialogOpen, setStandardChartDialogOpen] = useState(false);
   const [chartNotice, setChartNotice] = useState<string | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
   const buildNewAccountDraft = (): ChartAccount => ({
     id: `manual-${Date.now()}`,
@@ -478,11 +490,6 @@ export function ChartOfAccountsWorkspace({
     };
   };
 
-  const summaryItems = (["Asset", "Liability", "Equity", "Income", "Expense"] as ChartAccountType[]).map((type) => ({
-    count: accounts.filter((account) => account.type === type).length,
-    label: type === "Asset" ? "Assets" : type === "Liability" ? "Liabilities" : type === "Expense" ? "Expenses" : type
-  }));
-
   const filteredAccounts = [...accounts]
     .filter((account) => {
       const matchesSearch =
@@ -540,6 +547,7 @@ export function ChartOfAccountsWorkspace({
     .filter((group): group is { count: number; label: string; rows: Array<{ account: ChartAccount; depth: number }>; type: ChartAccountType } => Boolean(group));
 
   const visibleIds = filteredAccounts.map((account) => account.id);
+  const activeFilterCount = [typeFilter, categoryFilter, statusFilter, sourceFilter].filter((value) => value !== "all").length;
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedAccountIds.includes(id));
   const selectedCount = selectedAccountIds.length;
   const editParentAccountOptions = buildParentOptions(editingAccount?.id);
@@ -593,23 +601,58 @@ export function ChartOfAccountsWorkspace({
     return () => window.clearTimeout(timeoutId);
   }, [chartNotice]);
 
+  useEffect(() => {
+    if (!filterMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFilterMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filterMenuOpen]);
+
   const openAccountDrawer = (account: ChartAccount) => {
+    setFilterMenuOpen(false);
     setCreateAccountDraft(null);
     setEditingAccount({ ...account });
   };
 
   const handleAddAccount = () => {
+    setFilterMenuOpen(false);
     setStandardChartDialogOpen(false);
     setEditingAccount(null);
     setCreateAccountDraft(buildNewAccountDraft());
   };
 
   const handleOpenStandardChart = () => {
+    setFilterMenuOpen(false);
     setCreateAccountDraft(null);
     setEditingAccount(null);
     setStandardChartPresetId(chartStandardPresets[0]?.id ?? "");
     setStandardChartMode(accounts.length > 0 ? "merge" : "replace");
     setStandardChartDialogOpen(true);
+  };
+
+  const clearFilters = () => {
+    setTypeFilter("all");
+    setCategoryFilter("all");
+    setStatusFilter("all");
+    setSourceFilter("all");
   };
 
   const updateEditingField = <Field extends keyof ChartAccount>(field: Field, value: ChartAccount[Field]) => {
@@ -723,17 +766,6 @@ export function ChartOfAccountsWorkspace({
       </header>
 
       {chartNotice ? <div className="chart-accounts-notice">{chartNotice}</div> : null}
-
-      <section className="chart-accounts-summary" aria-label="Chart summary">
-        {summaryItems.map((item) => (
-          <div key={item.label} className="chart-summary-item">
-            <span>{item.label}</span>
-            <strong>{item.count}</strong>
-            <small>{item.count === 1 ? "account" : "accounts"}</small>
-          </div>
-        ))}
-      </section>
-
       <section className="chart-accounts-shell">
         <div className="chart-accounts-main">
           <div className="chart-accounts-toolbar">
@@ -747,12 +779,56 @@ export function ChartOfAccountsWorkspace({
               />
             </label>
 
-            <div className="chart-accounts-filters">
-              <CustomSelect ariaLabel="Account type filter" value={typeFilter} options={chartAccountTypeOptions} onChange={setTypeFilter} />
-              <CustomSelect ariaLabel="Account category filter" value={categoryFilter} options={chartAccountCategoryOptions} onChange={setCategoryFilter} />
-              <CustomSelect ariaLabel="Account status filter" value={statusFilter} options={chartAccountStatusOptions} onChange={setStatusFilter} />
-              <CustomSelect ariaLabel="Account source filter" value={sourceFilter} options={chartAccountSourceOptions} onChange={setSourceFilter} />
-              <CustomSelect ariaLabel="Sort accounts" value={sortBy} options={chartAccountSortOptions} onChange={setSortBy} />
+            <div className="chart-accounts-toolbar-actions">
+              <div ref={filterMenuRef} className={`chart-filter-popover ${filterMenuOpen ? "chart-filter-popover-open" : ""}`}>
+                <button
+                  type="button"
+                  className={`chart-filter-trigger ${activeFilterCount > 0 ? "chart-filter-trigger-active" : ""}`}
+                  aria-expanded={filterMenuOpen}
+                  aria-haspopup="dialog"
+                  onClick={() => setFilterMenuOpen((current) => !current)}
+                >
+                  <FilterButtonIcon />
+                  <span>Filter</span>
+                  {activeFilterCount > 0 ? <span className="chart-filter-trigger-count">{activeFilterCount}</span> : null}
+                </button>
+
+                {filterMenuOpen ? (
+                  <div className="chart-filter-panel" role="dialog" aria-label="Filter accounts">
+                    <div className="chart-filter-panel-head">
+                      <div>
+                        <strong>Filter accounts</strong>
+                        <span>Refine what appears in the chart without crowding the toolbar.</span>
+                      </div>
+
+                      {activeFilterCount > 0 ? (
+                        <button type="button" className="chart-filter-clear" onClick={clearFilters}>
+                          Clear all
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div className="chart-accounts-filters">
+                      <SetupField label="Type">
+                        <CustomSelect ariaLabel="Account type filter" value={typeFilter} options={chartAccountTypeOptions} onChange={setTypeFilter} />
+                      </SetupField>
+                      <SetupField label="Category">
+                        <CustomSelect ariaLabel="Account category filter" value={categoryFilter} options={chartAccountCategoryOptions} onChange={setCategoryFilter} />
+                      </SetupField>
+                      <SetupField label="Status">
+                        <CustomSelect ariaLabel="Account status filter" value={statusFilter} options={chartAccountStatusOptions} onChange={setStatusFilter} />
+                      </SetupField>
+                      <SetupField label="Source">
+                        <CustomSelect ariaLabel="Account source filter" value={sourceFilter} options={chartAccountSourceOptions} onChange={setSourceFilter} />
+                      </SetupField>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="chart-sort-select">
+                <CustomSelect ariaLabel="Sort accounts" value={sortBy} options={chartAccountSortOptions} onChange={setSortBy} />
+              </div>
             </div>
           </div>
 
@@ -879,227 +955,228 @@ export function ChartOfAccountsWorkspace({
             onClick={() => setEditingAccount(null)}
           />
 
-          <aside className="chart-inspector chart-inspector-drawer">
-            <div className="chart-inspector-head">
-              <div className="chart-inspector-head-main">
-                <div className="chart-inspector-head-top">
-                  <div className="chart-inspector-head-copy">
-                    <span className="chart-inspector-kicker">Account details</span>
-                    <div className="chart-inspector-title-row">
-                      <span className="chart-inspector-code">{editingAccount.code}</span>
-                      <h3>{editingAccount.name}</h3>
+          <aside className="chart-inspector chart-inspector-drawer" style={{ height: "100%", maxHeight: "100%", overflow: "visible" }}>
+            <button
+              type="button"
+              className="chart-sheet-close chart-sheet-close-floating"
+              style={{ left: "-54px" }}
+              onClick={() => setEditingAccount(null)}
+              aria-label="Close account details"
+            >
+              <CloseIcon />
+            </button>
+
+              <div className="chart-inspector-head">
+                <div className="chart-inspector-head-main">
+                  <div className="chart-inspector-head-top">
+                    <div className="chart-inspector-head-copy">
+                      <span className="chart-inspector-kicker">Account details</span>
+                      <div className="chart-inspector-title-row">
+                        <span className="chart-inspector-code">{editingAccount.code}</span>
+                        <h3>{editingAccount.name}</h3>
+                      </div>
+                      <p>Review core posting behavior and keep protected system accounts aligned.</p>
                     </div>
-                    <p>Review core posting behavior and keep protected system accounts aligned.</p>
                   </div>
 
-                  <button
-                    type="button"
-                    className="chart-inspector-close"
-                    onClick={() => setEditingAccount(null)}
-                    aria-label="Close account details"
-                  >
-                    <CloseIcon />
-                  </button>
-                </div>
+                  <div className="chart-inspector-head-meta">
+                    <span className={`chart-pill chart-pill-status chart-pill-status-${editingAccount.status.toLowerCase()}`}>{editingAccount.status}</span>
+                    <span className={`chart-pill chart-pill-source chart-pill-source-${editingAccount.source.toLowerCase()}`}>{editingAccount.source}</span>
+                  </div>
 
-                <div className="chart-inspector-head-meta">
-                  <span className={`chart-pill chart-pill-status chart-pill-status-${editingAccount.status.toLowerCase()}`}>{editingAccount.status}</span>
-                  <span className={`chart-pill chart-pill-source chart-pill-source-${editingAccount.source.toLowerCase()}`}>{editingAccount.source}</span>
-                </div>
-
-                <div className="chart-inspector-summary-grid">
-                  <div className="chart-inspector-summary-item">
-                    <span>Type</span>
-                    <strong>{editingAccount.type}</strong>
-                  </div>
-                  <div className="chart-inspector-summary-item">
-                    <span>Category</span>
-                    <strong>{editingAccount.category}</strong>
-                  </div>
-                  <div className="chart-inspector-summary-item">
-                    <span>Parent</span>
-                    <strong>{editingAccount.parent || "Top level"}</strong>
-                  </div>
-                  <div className="chart-inspector-summary-item">
-                    <span>Updated</span>
-                    <strong>{editingAccount.updatedAt}</strong>
+                  <div className="chart-inspector-summary-grid">
+                    <div className="chart-inspector-summary-item">
+                      <span>Type</span>
+                      <strong>{editingAccount.type}</strong>
+                    </div>
+                    <div className="chart-inspector-summary-item">
+                      <span>Category</span>
+                      <strong>{editingAccount.category}</strong>
+                    </div>
+                    <div className="chart-inspector-summary-item">
+                      <span>Parent</span>
+                      <strong>{editingAccount.parent || "Top level"}</strong>
+                    </div>
+                    <div className="chart-inspector-summary-item">
+                      <span>Updated</span>
+                      <strong>{editingAccount.updatedAt}</strong>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className="chart-inspector-body">
-              <section className="chart-inspector-section">
-                <div className="chart-inspector-section-head">
-                  <strong>Structure</strong>
-                  <span>Place this account in the chart and keep hierarchy behavior clear for everyone posting to it.</span>
-                </div>
+              <div className="chart-inspector-body">
+                <section className="chart-inspector-section">
+                  <div className="chart-inspector-section-head">
+                    <strong>Structure</strong>
+                    <span>Place this account in the chart and keep hierarchy behavior clear for everyone posting to it.</span>
+                  </div>
 
-                <div className="chart-inspector-grid">
-                  <SetupField label="Account structure">
-                    <CustomSelect
-                      ariaLabel="Account structure"
-                      value={isEditingSubAccount ? "sub-account" : "top-level"}
-                      options={chartAccountStructureOptions}
-                      onChange={(nextValue) => {
-                        if (nextValue === "top-level") {
-                          updateEditingParentAccount("none");
-                          return;
-                        }
-
-                        const firstParent = editParentAccountOptions[0]?.value;
-
-                        if (firstParent) {
-                          updateEditingParentAccount(firstParent);
-                        }
-                      }}
-                    />
-                  </SetupField>
-
-                  {isEditingSubAccount ? (
-                    <SetupField label="Parent account" helper="Type, category, and normal balance follow the selected parent.">
+                  <div className="chart-inspector-grid">
+                    <SetupField label="Account structure">
                       <CustomSelect
-                        ariaLabel="Parent account"
-                        value={editingAccount.parentId ?? "none"}
-                        options={[...editParentAccountOptions, { value: "none", label: "Remove parent account" }]}
-                        onChange={updateEditingParentAccount}
+                        ariaLabel="Account structure"
+                        value={isEditingSubAccount ? "sub-account" : "top-level"}
+                        options={chartAccountStructureOptions}
+                        onChange={(nextValue) => {
+                          if (nextValue === "top-level") {
+                            updateEditingParentAccount("none");
+                            return;
+                          }
+
+                          const firstParent = editParentAccountOptions[0]?.value;
+
+                          if (firstParent) {
+                            updateEditingParentAccount(firstParent);
+                          }
+                        }}
                       />
                     </SetupField>
-                  ) : (
-                    <div className="chart-inspector-note">
-                      <span className="chart-inspector-note-kicker">Hierarchy guidance</span>
-                      <strong>Top-level account</strong>
-                      <span>This account appears as a root row and can hold sub-accounts later without changing its reporting role.</span>
-                    </div>
-                  )}
-                </div>
-              </section>
 
-              <section className="chart-inspector-section">
-                <div className="chart-inspector-section-head">
-                  <strong>Classification</strong>
-                  <span>Keep naming and reporting labels precise so teams can scan this account quickly across the workspace.</span>
-                </div>
+                    {isEditingSubAccount ? (
+                      <SetupField label="Parent account" helper="Type, category, and normal balance follow the selected parent.">
+                        <CustomSelect
+                          ariaLabel="Parent account"
+                          value={editingAccount.parentId ?? "none"}
+                          options={[...editParentAccountOptions, { value: "none", label: "Remove parent account" }]}
+                          onChange={updateEditingParentAccount}
+                        />
+                      </SetupField>
+                    ) : (
+                      <div className="chart-inspector-note">
+                        <span className="chart-inspector-note-kicker">Hierarchy guidance</span>
+                        <strong>Top-level account</strong>
+                        <span>This account appears as a root row and can hold sub-accounts later without changing its reporting role.</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
 
-                <div className="chart-inspector-grid">
-                  <SetupField label="Account code" required>
-                    <input
-                      type="text"
-                      value={editingAccount.code}
-                      onChange={(event) => updateEditingField("code", event.target.value)}
-                      placeholder="e.g. 1010"
-                    />
-                  </SetupField>
+                <section className="chart-inspector-section">
+                  <div className="chart-inspector-section-head">
+                    <strong>Classification</strong>
+                    <span>Keep naming and reporting labels precise so teams can scan this account quickly across the workspace.</span>
+                  </div>
 
-                  <SetupField label="Account name" required>
-                    <input
-                      type="text"
-                      value={editingAccount.name}
-                      onChange={(event) => updateEditingField("name", event.target.value)}
-                      placeholder="Enter account name"
-                    />
-                  </SetupField>
+                  <div className="chart-inspector-grid">
+                    <SetupField label="Account code" required>
+                      <input
+                        type="text"
+                        value={editingAccount.code}
+                        onChange={(event) => updateEditingField("code", event.target.value)}
+                        placeholder="e.g. 1010"
+                      />
+                    </SetupField>
 
-                  <SetupField label="Type">
-                    <CustomSelect
-                      ariaLabel="Account type"
-                      value={editingAccount.type}
-                      options={chartAccountTypeOptions.filter((option) => option.value !== "all")}
-                      onChange={(nextValue) => updateEditingField("type", nextValue as ChartAccountType)}
-                      disabled={isEditingSubAccount}
-                    />
-                  </SetupField>
+                    <SetupField label="Account name" required>
+                      <input
+                        type="text"
+                        value={editingAccount.name}
+                        onChange={(event) => updateEditingField("name", event.target.value)}
+                        placeholder="Enter account name"
+                      />
+                    </SetupField>
 
-                  <SetupField label="Category">
-                    <CustomSelect
-                      ariaLabel="Account category"
-                      value={editingAccount.category}
-                      options={chartAccountCategoryOptions.filter((option) => option.value !== "all")}
-                      onChange={(nextValue) => updateEditingField("category", nextValue)}
-                      disabled={isEditingSubAccount}
-                    />
-                  </SetupField>
-                </div>
-              </section>
+                    <SetupField label="Type">
+                      <CustomSelect
+                        ariaLabel="Account type"
+                        value={editingAccount.type}
+                        options={chartAccountTypeOptions.filter((option) => option.value !== "all")}
+                        onChange={(nextValue) => updateEditingField("type", nextValue as ChartAccountType)}
+                        disabled={isEditingSubAccount}
+                      />
+                    </SetupField>
 
-              <section className="chart-inspector-section">
-                <div className="chart-inspector-section-head">
-                  <strong>Posting behavior</strong>
-                  <span>Control how this account behaves operationally and whether it remains available across posting surfaces.</span>
-                </div>
+                    <SetupField label="Category">
+                      <CustomSelect
+                        ariaLabel="Account category"
+                        value={editingAccount.category}
+                        options={chartAccountCategoryOptions.filter((option) => option.value !== "all")}
+                        onChange={(nextValue) => updateEditingField("category", nextValue)}
+                        disabled={isEditingSubAccount}
+                      />
+                    </SetupField>
+                  </div>
+                </section>
 
-                <div className="chart-inspector-grid">
-                  <SetupField label="Normal balance">
-                    <CustomSelect
-                      ariaLabel="Normal balance"
-                      value={editingAccount.normalBalance}
-                      options={chartAccountBalanceOptions}
-                      onChange={(nextValue) => updateEditingField("normalBalance", nextValue as ChartAccountBalance)}
-                      disabled={isEditingSubAccount}
-                    />
-                  </SetupField>
+                <section className="chart-inspector-section">
+                  <div className="chart-inspector-section-head">
+                    <strong>Posting behavior</strong>
+                    <span>Control how this account behaves operationally and whether it remains available across posting surfaces.</span>
+                  </div>
 
-                  <SetupField label="Status">
-                    <CustomSelect
-                      ariaLabel="Account status"
-                      value={editingAccount.status}
-                      options={chartAccountStatusOptions.filter((option) => option.value !== "all")}
-                      onChange={(nextValue) => updateEditingField("status", nextValue as ChartAccountStatus)}
-                    />
-                  </SetupField>
+                  <div className="chart-inspector-grid">
+                    <SetupField label="Normal balance">
+                      <CustomSelect
+                        ariaLabel="Normal balance"
+                        value={editingAccount.normalBalance}
+                        options={chartAccountBalanceOptions}
+                        onChange={(nextValue) => updateEditingField("normalBalance", nextValue as ChartAccountBalance)}
+                        disabled={isEditingSubAccount}
+                      />
+                    </SetupField>
 
-                  <div className="setup-grid-full">
-                    <div className="chart-inspector-state-card">
-                      <span className="chart-inspector-note-kicker">Posting visibility</span>
-                      <strong>
-                        {isEditingSubAccount
-                          ? `Sub-account under ${editingAccount.parent || "selected parent"}`
-                          : `Top-level ${editingAccount.type.toLowerCase()} account`}
-                      </strong>
-                      <p>
-                        {editingAccount.source === "System"
-                          ? "System-owned accounts remain protected while staying available across journals, posting flows, and reports."
-                          : "Manual accounts stay available across journals, posting selections, and chart maintenance views once saved."}
-                      </p>
-                      <div className="chart-inspector-state-meta">
-                        <span>Source: {editingAccount.source}</span>
-                        <span>Balance: {editingAccount.normalBalance}</span>
-                        <span>Status: {editingAccount.status}</span>
+                    <SetupField label="Status">
+                      <CustomSelect
+                        ariaLabel="Account status"
+                        value={editingAccount.status}
+                        options={chartAccountStatusOptions.filter((option) => option.value !== "all")}
+                        onChange={(nextValue) => updateEditingField("status", nextValue as ChartAccountStatus)}
+                      />
+                    </SetupField>
+
+                    <div className="setup-grid-full">
+                      <div className="chart-inspector-state-card">
+                        <span className="chart-inspector-note-kicker">Posting visibility</span>
+                        <strong>
+                          {isEditingSubAccount
+                            ? `Sub-account under ${editingAccount.parent || "selected parent"}`
+                            : `Top-level ${editingAccount.type.toLowerCase()} account`}
+                        </strong>
+                        <p>
+                          {editingAccount.source === "System"
+                            ? "System-owned accounts remain protected while staying available across journals, posting flows, and reports."
+                            : "Manual accounts stay available across journals, posting selections, and chart maintenance views once saved."}
+                        </p>
+                        <div className="chart-inspector-state-meta">
+                          <span>Source: {editingAccount.source}</span>
+                          <span>Balance: {editingAccount.normalBalance}</span>
+                          <span>Status: {editingAccount.status}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </section>
+                </section>
 
-              <section className="chart-inspector-section">
-                <div className="chart-inspector-section-head">
-                  <strong>Description</strong>
-                  <span>Capture the posting or review context other teammates should understand before they use this account.</span>
-                </div>
-
-                <div className="chart-inspector-grid">
-                  <div className="setup-grid-full">
-                    <SetupField label="Description">
-                      <textarea
-                        className="chart-inspector-textarea"
-                        value={editingAccount.description}
-                        onChange={(event) => updateEditingField("description", event.target.value)}
-                        placeholder="Add a short description for posting or review context"
-                      />
-                    </SetupField>
+                <section className="chart-inspector-section">
+                  <div className="chart-inspector-section-head">
+                    <strong>Description</strong>
+                    <span>Capture the posting or review context other teammates should understand before they use this account.</span>
                   </div>
-                </div>
-              </section>
-            </div>
 
-            <footer className="chart-inspector-footer">
-              <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setEditingAccount(null)}>
-                Cancel
-              </button>
-              <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleSaveEditedAccount} disabled={editSaveDisabled}>
-                Save changes
-              </button>
-            </footer>
+                  <div className="chart-inspector-grid">
+                    <div className="setup-grid-full">
+                      <SetupField label="Description">
+                        <textarea
+                          className="chart-inspector-textarea"
+                          value={editingAccount.description}
+                          onChange={(event) => updateEditingField("description", event.target.value)}
+                          placeholder="Add a short description for posting or review context"
+                        />
+                      </SetupField>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              <footer className="chart-inspector-footer">
+                <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setEditingAccount(null)}>
+                  Cancel
+                </button>
+                <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleSaveEditedAccount} disabled={editSaveDisabled}>
+                  Save changes
+                </button>
+              </footer>
           </aside>
         </div>
       ) : null}
