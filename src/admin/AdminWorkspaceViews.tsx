@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type SelectOption = {
   label: string;
@@ -48,14 +48,22 @@ type AdminUserStatus = "Active" | "Invited" | "Suspended";
 type AdminUserRoleTone = "admin" | "finance" | "operations" | "readonly";
 
 type AdminUserRecord = {
+  approvalScope: string;
   department: string;
+  emergencyContact: string;
+  employeeId: string;
   email: string;
   id: string;
   lastActive: string;
+  location: string;
   name: string;
+  phone: string;
+  recentActivity: string[];
   role: string;
   roleTone: AdminUserRoleTone;
+  seatType: "Workspace admin" | "Department lead" | "Reviewer";
   status: AdminUserStatus;
+  workspaceAccess: { area: string; level: string }[];
 };
 
 type AdminRoleRecord = {
@@ -136,41 +144,106 @@ const adminUsersSeed: AdminUserRecord[] = [
     id: "user-1",
     name: "Andrea Ramos",
     email: "andrea@ledgera.dev",
+    phone: "+63 917 801 2201",
+    employeeId: "LDG-ADM-001",
     role: "Administrator",
     roleTone: "admin",
     department: "Leadership",
     status: "Active",
-    lastActive: "2 minutes ago"
+    lastActive: "2 minutes ago",
+    location: "Makati HQ",
+    seatType: "Workspace admin",
+    approvalScope: "Can approve chart changes, company profile updates, and payroll release readiness.",
+    emergencyContact: "Finance Ops Hotline",
+    workspaceAccess: [
+      { area: "Admin", level: "Full configuration access" },
+      { area: "Accounting", level: "Can review and publish structure changes" },
+      { area: "Payroll", level: "Can approve final release checks" },
+      { area: "Reports", level: "Can export company-wide reports" }
+    ],
+    recentActivity: [
+      "Updated company VAT registration status this morning.",
+      "Reviewed the default chart import before publishing it to accounting.",
+      "Confirmed payroll release controls for the current cycle."
+    ]
   },
   {
     id: "user-2",
     name: "Miguel Santos",
     email: "miguel@ledgera.dev",
+    phone: "+63 917 663 1440",
+    employeeId: "LDG-FIN-014",
     role: "Finance Manager",
     roleTone: "finance",
     department: "Accounting",
     status: "Active",
-    lastActive: "14 minutes ago"
+    lastActive: "14 minutes ago",
+    location: "Pasig Finance Hub",
+    seatType: "Department lead",
+    approvalScope: "Owns chart maintenance, closing checks, and accounting review exports.",
+    emergencyContact: "Accounting Control Desk",
+    workspaceAccess: [
+      { area: "Accounting", level: "Full chart and journal review access" },
+      { area: "Reports", level: "Can generate and lock month-end packs" },
+      { area: "Admin", level: "Read-only company settings" }
+    ],
+    recentActivity: [
+      "Imported the standard chart template for the new workspace.",
+      "Reviewed account groupings for current asset and liability structures.",
+      "Exported the last draft of the quarter-end finance report."
+    ]
   },
   {
     id: "user-3",
     name: "Patricia Dela Cruz",
     email: "patricia@ledgera.dev",
+    phone: "+63 998 110 0742",
+    employeeId: "LDG-PAY-006",
     role: "Payroll Officer",
     roleTone: "operations",
     department: "Operations",
     status: "Invited",
-    lastActive: "Invitation sent today"
+    lastActive: "Invitation sent today",
+    location: "Remote - Cebu",
+    seatType: "Department lead",
+    approvalScope: "Can prepare contribution updates and pre-release payroll checks after onboarding.",
+    emergencyContact: "People Operations Team",
+    workspaceAccess: [
+      { area: "Payroll", level: "Can prepare runs and contribution updates" },
+      { area: "Reports", level: "Can export payroll summaries only" },
+      { area: "Admin", level: "No workspace configuration access yet" }
+    ],
+    recentActivity: [
+      "Invitation created for payroll onboarding today.",
+      "Pending workspace setup and multi-factor verification.",
+      "No in-product activity recorded yet."
+    ]
   },
   {
     id: "user-4",
     name: "Leo Garcia",
     email: "leo@ledgera.dev",
+    phone: "+63 917 440 8812",
+    employeeId: "LDG-AUD-022",
     role: "External Auditor",
     roleTone: "readonly",
     department: "Accounting",
     status: "Suspended",
-    lastActive: "5 days ago"
+    lastActive: "5 days ago",
+    location: "Ortigas Audit Office",
+    seatType: "Reviewer",
+    approvalScope: "Read-only reviewer for quarter-end audit packages and compliance exports.",
+    emergencyContact: "External Audit Liaison",
+    workspaceAccess: [
+      { area: "Reports", level: "Can view locked report packages" },
+      { area: "Compliance", level: "Can inspect uploaded filings" },
+      { area: "Accounting", level: "No edit rights" }
+    ],
+    recentActivity: [
+      "Viewed the quarter-end compliance package yesterday.",
+      "Account access was suspended after the review window closed.",
+      "No active edit permissions remain on this workspace."
+    ]
   }
 ];
 
@@ -317,6 +390,34 @@ function SummaryCards({
   );
 }
 
+function FilterButtonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="chart-filter-button-icon">
+      <path d="M4.75 6.75h14.5" />
+      <path d="M7.5 11.75h9" />
+      <path d="M10 16.75h4" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="chart-close-icon">
+      <path d="M5 5l10 10M15 5L5 15" />
+    </svg>
+  );
+}
+
+function getUserInitials(name: string) {
+  const parts = name
+    .split(" ")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2);
+
+  return parts.map((part) => part[0]?.toUpperCase() ?? "").join("") || "U";
+}
+
 function AdminPageHero({
   badge,
   title,
@@ -343,10 +444,13 @@ function AdminPageHero({
 }
 
 function AdminUsersRolesView({ companyName, components }: { companyName: string; components: SharedAdminComponents }) {
-  const { CustomSelect, RowOpenIcon, SearchIcon } = components;
+  const { CustomSelect, RowOpenIcon, SearchIcon, SetupField } = components;
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
+  const filterMenuRef = useRef<HTMLDivElement | null>(null);
 
   const filteredUsers = adminUsersSeed.filter((user) => {
     const matchesSearch =
@@ -357,6 +461,52 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
 
     return matchesSearch && matchesStatus && matchesDepartment;
   });
+  const activeFilterCount = [statusFilter, departmentFilter].filter((value) => value !== "all").length;
+
+  useEffect(() => {
+    if (!filterMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!filterMenuRef.current?.contains(event.target as Node)) {
+        setFilterMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setFilterMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [filterMenuOpen]);
+
+  useEffect(() => {
+    if (!selectedUser) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedUser(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedUser]);
+
+  const clearFilters = () => {
+    setStatusFilter("all");
+    setDepartmentFilter("all");
+  };
 
   return (
     <div className="dashboard-content admin-workspace-view admin-view-users">
@@ -384,14 +534,50 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
             />
           </label>
 
-          <div className="admin-filter-grid admin-filter-grid-two">
-            <CustomSelect ariaLabel="Filter user status" value={statusFilter} options={adminUserStatusOptions} onChange={setStatusFilter} />
-            <CustomSelect
-              ariaLabel="Filter user department"
-              value={departmentFilter}
-              options={adminUserDepartmentOptions}
-              onChange={setDepartmentFilter}
-            />
+          <div className="chart-accounts-toolbar-actions">
+            <div ref={filterMenuRef} className={`chart-filter-popover ${filterMenuOpen ? "chart-filter-popover-open" : ""}`}>
+              <button
+                type="button"
+                className={`chart-filter-trigger ${activeFilterCount > 0 ? "chart-filter-trigger-active" : ""}`}
+                aria-expanded={filterMenuOpen}
+                aria-haspopup="dialog"
+                onClick={() => setFilterMenuOpen((current) => !current)}
+              >
+                <FilterButtonIcon />
+                <span>Filter</span>
+                {activeFilterCount > 0 ? <span className="chart-filter-trigger-count">{activeFilterCount}</span> : null}
+              </button>
+
+              {filterMenuOpen ? (
+                <div className="chart-filter-panel" role="dialog" aria-label="Filter users">
+                  <div className="chart-filter-panel-head">
+                    <div>
+                      <strong>Filter users</strong>
+                      <span>Refine the visible user records without crowding the toolbar.</span>
+                    </div>
+                    {activeFilterCount > 0 ? (
+                      <button type="button" className="chart-filter-clear" onClick={clearFilters}>
+                        Clear filters
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="chart-accounts-filters">
+                    <SetupField label="Status">
+                      <CustomSelect ariaLabel="Filter user status" value={statusFilter} options={adminUserStatusOptions} onChange={setStatusFilter} />
+                    </SetupField>
+                    <SetupField label="Department">
+                      <CustomSelect
+                        ariaLabel="Filter user department"
+                        value={departmentFilter}
+                        options={adminUserDepartmentOptions}
+                        onChange={setDepartmentFilter}
+                      />
+                    </SetupField>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -410,11 +596,14 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
             <tbody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <tr key={user.id}>
+                  <tr key={user.id} className={selectedUser?.id === user.id ? "chart-table-row-open" : ""} onClick={() => setSelectedUser(user)}>
                     <td>
-                      <div className="admin-primary-cell">
-                        <strong>{user.name}</strong>
-                        <span>{user.email}</span>
+                      <div className="admin-user-cell">
+                        <span className={`admin-user-avatar admin-user-avatar-${user.roleTone}`}>{getUserInitials(user.name)}</span>
+                        <div className="admin-primary-cell">
+                          <strong>{user.name}</strong>
+                          <span>{user.email}</span>
+                        </div>
                       </div>
                     </td>
                     <td>
@@ -426,7 +615,15 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
                     </td>
                     <td>{user.lastActive}</td>
                     <td className="chart-table-actions-col">
-                      <button type="button" className="chart-row-action" aria-label={`Open ${user.name}`}>
+                      <button
+                        type="button"
+                        className="chart-row-action"
+                        aria-label={`Open ${user.name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedUser(user);
+                        }}
+                      >
                         <RowOpenIcon />
                       </button>
                     </td>
@@ -446,6 +643,132 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
           </table>
         </div>
       </section>
+
+      {selectedUser ? (
+        <div className="chart-standard-layer admin-user-modal-layer" role="dialog" aria-modal="true" aria-label={`${selectedUser.name} details`}>
+          <button
+            type="button"
+            className="chart-standard-backdrop"
+            aria-label="Close user details"
+            onClick={() => setSelectedUser(null)}
+          />
+
+          <section className="admin-user-modal">
+            <button
+              type="button"
+              className="admin-user-modal-close"
+              onClick={() => setSelectedUser(null)}
+              aria-label="Close user details"
+            >
+              <CloseIcon />
+            </button>
+
+            <div className="admin-user-modal-main">
+              <div className="admin-user-profile">
+                <div className={`admin-user-profile-avatar admin-user-avatar-${selectedUser.roleTone}`}>{getUserInitials(selectedUser.name)}</div>
+                <div className="admin-user-profile-copy">
+                  <span className="admin-user-profile-kicker">{selectedUser.employeeId}</span>
+                  <h3>{selectedUser.name}</h3>
+                  <p>{selectedUser.role} for {companyName}</p>
+                </div>
+                <div className="admin-user-profile-pills">
+                  <span className={`admin-pill admin-pill-role-${selectedUser.roleTone}`}>{selectedUser.role}</span>
+                  <span className={`admin-pill admin-pill-status-${selectedUser.status.toLowerCase().replace(/\s+/g, "-")}`}>{selectedUser.status}</span>
+                </div>
+              </div>
+
+              <div className="admin-user-modal-form">
+                <div className="admin-user-modal-field-grid">
+                  <div className="admin-user-modal-field">
+                    <span>First name</span>
+                    <strong>{selectedUser.name.split(" ")[0]}</strong>
+                  </div>
+                  <div className="admin-user-modal-field">
+                    <span>Last name</span>
+                    <strong>{selectedUser.name.split(" ").slice(1).join(" ") || "-"}</strong>
+                  </div>
+                  <div className="admin-user-modal-field">
+                    <span>Department</span>
+                    <strong>{selectedUser.department}</strong>
+                  </div>
+                  <div className="admin-user-modal-field">
+                    <span>Seat type</span>
+                    <strong>{selectedUser.seatType}</strong>
+                  </div>
+                  <div className="admin-user-modal-field admin-user-modal-field-full">
+                    <span>Email address</span>
+                    <strong>{selectedUser.email}</strong>
+                  </div>
+                  <div className="admin-user-modal-field">
+                    <span>Phone number</span>
+                    <strong>{selectedUser.phone}</strong>
+                  </div>
+                  <div className="admin-user-modal-field">
+                    <span>Location</span>
+                    <strong>{selectedUser.location}</strong>
+                  </div>
+                </div>
+
+                <div className="admin-user-modal-inline-note">
+                  <span>Approval scope</span>
+                  <p>{selectedUser.approvalScope}</p>
+                </div>
+              </div>
+            </div>
+
+            <aside className="admin-user-modal-side">
+              <div className="admin-user-side-panel">
+                <div className="admin-user-side-panel-head">
+                  <strong>Workspace access</strong>
+                  <span>Current module coverage</span>
+                </div>
+
+                <div className="admin-user-access-list">
+                  {selectedUser.workspaceAccess.map((access) => (
+                    <div key={`${selectedUser.id}-${access.area}`} className="admin-user-access-item">
+                      <div>
+                        <strong>{access.area}</strong>
+                        <span>{access.level}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-user-side-panel">
+                <div className="admin-user-side-panel-head">
+                  <strong>Recent activity</strong>
+                  <span>Latest signals for this seat</span>
+                </div>
+
+                <div className="admin-user-activity-list">
+                  {selectedUser.recentActivity.map((entry, index) => (
+                    <div key={`${selectedUser.id}-activity-${index}`} className="admin-user-activity-item">
+                      <span className="admin-user-activity-index">{index + 1}</span>
+                      <p>{entry}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            <footer className="admin-user-modal-footer">
+              <div className="admin-user-modal-footer-copy">
+                <strong>{selectedUser.lastActive}</strong>
+                <span>Emergency contact: {selectedUser.emergencyContact}</span>
+              </div>
+              <div className="admin-user-modal-footer-actions">
+                <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setSelectedUser(null)}>
+                  Cancel
+                </button>
+                <button type="button" className="chart-page-button chart-page-button-primary" onClick={() => setSelectedUser(null)}>
+                  Done
+                </button>
+              </div>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
