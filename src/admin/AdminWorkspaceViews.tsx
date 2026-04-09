@@ -349,6 +349,51 @@ const contributionTablesSeed: ContributionTableRecord[] = [
   }
 ];
 
+const USER_MODAL_ANIMATION_MS = 240;
+
+const defaultWorkflowSettings: WorkspaceToggleSetting[] = [
+  {
+    id: "period-lock",
+    label: "Require month-end lock approval",
+    description: "Prevent accidental posting once a reporting period has been reviewed.",
+    enabled: true
+  },
+  {
+    id: "journal-validation",
+    label: "Block unbalanced journal entries",
+    description: "Keep double-entry validation enforced across manual posting flows.",
+    enabled: true
+  },
+  {
+    id: "tax-reminders",
+    label: "Send BIR deadline reminders",
+    description: "Trigger deadline nudges for monthly, quarterly, and annual compliance calendars.",
+    enabled: true
+  },
+  {
+    id: "payroll-notice",
+    label: "Notify payroll approvers before release",
+    description: "Warn designated admins before payslips and remittance files are finalized.",
+    enabled: false
+  }
+];
+
+function downloadTextFile(filename: string, content: string, type = "text/plain;charset=utf-8") {
+  const blob = new Blob([content], { type });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+function formatUiTimestamp(date = new Date()) {
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
 const customizationModulesSeed: CustomModuleRecord[] = [
   {
     id: "client-billing",
@@ -408,6 +453,54 @@ function CloseIcon() {
   );
 }
 
+function AdminFieldIcon({ kind }: { kind: "user" | "briefcase" | "mail" | "phone" | "pin" | "shield" }) {
+  switch (kind) {
+    case "briefcase":
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M6.5 6.5V5.75A1.75 1.75 0 0 1 8.25 4h3.5A1.75 1.75 0 0 1 13.5 5.75v.75" />
+          <path d="M3.75 7.25h12.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-9.5a1.5 1.5 0 0 1-1.5-1.5z" />
+          <path d="M8.25 10.25h3.5" />
+        </svg>
+      );
+    case "mail":
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M4 5.75h12v8.5H4z" />
+          <path d="M4.75 6.5 10 10.5l5.25-4" />
+        </svg>
+      );
+    case "phone":
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M6.1 4.75h2.2l.9 3.2-1.4 1.15a10.1 10.1 0 0 0 3.1 3.1l1.15-1.4 3.2.9v2.2a1.1 1.1 0 0 1-1.22 1.1A10.8 10.8 0 0 1 4.99 5.97 1.1 1.1 0 0 1 6.1 4.75Z" />
+        </svg>
+      );
+    case "pin":
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 16.25s4.25-4.16 4.25-7.25A4.25 4.25 0 0 0 5.75 9c0 3.09 4.25 7.25 4.25 7.25Z" />
+          <path d="M10 10.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 3.75 15 5.5v4.08c0 3.02-2.06 5.82-5 6.67-2.94-.85-5-3.65-5-6.67V5.5z" />
+          <path d="m8.1 9.95 1.3 1.3 2.5-2.7" />
+        </svg>
+      );
+    case "user":
+    default:
+      return (
+        <svg viewBox="0 0 20 20" aria-hidden="true">
+          <path d="M10 10.1a2.85 2.85 0 1 0 0-5.7 2.85 2.85 0 0 0 0 5.7Z" />
+          <path d="M5.1 15.25a4.9 4.9 0 0 1 9.8 0" />
+        </svg>
+      );
+  }
+}
+
 function getUserInitials(name: string) {
   const parts = name
     .split(" ")
@@ -450,7 +543,9 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<AdminUserRecord | null>(null);
+  const [isUserModalClosing, setIsUserModalClosing] = useState(false);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
+  const userModalCloseTimeoutRef = useRef<number | null>(null);
 
   const filteredUsers = adminUsersSeed.filter((user) => {
     const matchesSearch =
@@ -495,7 +590,7 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setSelectedUser(null);
+        closeUserDetails();
       }
     };
 
@@ -503,9 +598,45 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedUser]);
 
+  useEffect(() => {
+    return () => {
+      if (userModalCloseTimeoutRef.current) {
+        window.clearTimeout(userModalCloseTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const clearFilters = () => {
     setStatusFilter("all");
     setDepartmentFilter("all");
+  };
+
+  const openUserDetails = (user: AdminUserRecord) => {
+    if (userModalCloseTimeoutRef.current) {
+      window.clearTimeout(userModalCloseTimeoutRef.current);
+      userModalCloseTimeoutRef.current = null;
+    }
+
+    setIsUserModalClosing(false);
+    setSelectedUser(user);
+  };
+
+  const closeUserDetails = () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    setIsUserModalClosing(true);
+
+    if (userModalCloseTimeoutRef.current) {
+      window.clearTimeout(userModalCloseTimeoutRef.current);
+    }
+
+    userModalCloseTimeoutRef.current = window.setTimeout(() => {
+      setSelectedUser(null);
+      setIsUserModalClosing(false);
+      userModalCloseTimeoutRef.current = null;
+    }, USER_MODAL_ANIMATION_MS);
   };
 
   return (
@@ -596,7 +727,7 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
             <tbody>
               {filteredUsers.length > 0 ? (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className={selectedUser?.id === user.id ? "chart-table-row-open" : ""} onClick={() => setSelectedUser(user)}>
+                  <tr key={user.id} className={selectedUser?.id === user.id ? "chart-table-row-open" : ""} onClick={() => openUserDetails(user)}>
                     <td>
                       <div className="admin-user-cell">
                         <span className={`admin-user-avatar admin-user-avatar-${user.roleTone}`}>{getUserInitials(user.name)}</span>
@@ -621,7 +752,7 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
                         aria-label={`Open ${user.name}`}
                         onClick={(event) => {
                           event.stopPropagation();
-                          setSelectedUser(user);
+                          openUserDetails(user);
                         }}
                       >
                         <RowOpenIcon />
@@ -648,16 +779,16 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
         <div className="chart-standard-layer admin-user-modal-layer" role="dialog" aria-modal="true" aria-label={`${selectedUser.name} details`}>
           <button
             type="button"
-            className="chart-standard-backdrop"
+            className={`chart-standard-backdrop ${isUserModalClosing ? "admin-user-modal-backdrop-closing" : ""}`}
             aria-label="Close user details"
-            onClick={() => setSelectedUser(null)}
+            onClick={closeUserDetails}
           />
 
-          <section className="admin-user-modal">
+          <section className={`admin-user-modal ${isUserModalClosing ? "admin-user-modal-closing" : ""}`}>
             <button
               type="button"
               className="admin-user-modal-close"
-              onClick={() => setSelectedUser(null)}
+              onClick={closeUserDetails}
               aria-label="Close user details"
             >
               <CloseIcon />
@@ -680,37 +811,61 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
               <div className="admin-user-modal-form">
                 <div className="admin-user-modal-field-grid">
                   <div className="admin-user-modal-field">
-                    <span>First name</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="user" /></span>
+                      <span>First name</span>
+                    </div>
                     <strong>{selectedUser.name.split(" ")[0]}</strong>
                   </div>
                   <div className="admin-user-modal-field">
-                    <span>Last name</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="user" /></span>
+                      <span>Last name</span>
+                    </div>
                     <strong>{selectedUser.name.split(" ").slice(1).join(" ") || "-"}</strong>
                   </div>
                   <div className="admin-user-modal-field">
-                    <span>Department</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="briefcase" /></span>
+                      <span>Department</span>
+                    </div>
                     <strong>{selectedUser.department}</strong>
                   </div>
                   <div className="admin-user-modal-field">
-                    <span>Seat type</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="shield" /></span>
+                      <span>Seat type</span>
+                    </div>
                     <strong>{selectedUser.seatType}</strong>
                   </div>
                   <div className="admin-user-modal-field admin-user-modal-field-full">
-                    <span>Email address</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="mail" /></span>
+                      <span>Email address</span>
+                    </div>
                     <strong>{selectedUser.email}</strong>
                   </div>
                   <div className="admin-user-modal-field">
-                    <span>Phone number</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="phone" /></span>
+                      <span>Phone number</span>
+                    </div>
                     <strong>{selectedUser.phone}</strong>
                   </div>
                   <div className="admin-user-modal-field">
-                    <span>Location</span>
+                    <div className="admin-user-modal-field-head">
+                      <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="pin" /></span>
+                      <span>Location</span>
+                    </div>
                     <strong>{selectedUser.location}</strong>
                   </div>
                 </div>
 
                 <div className="admin-user-modal-inline-note">
-                  <span>Approval scope</span>
+                  <div className="admin-user-modal-field-head">
+                    <span className="admin-user-modal-field-icon"><AdminFieldIcon kind="shield" /></span>
+                    <span>Approval scope</span>
+                  </div>
                   <p>{selectedUser.approvalScope}</p>
                 </div>
               </div>
@@ -758,10 +913,10 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
                 <span>Emergency contact: {selectedUser.emergencyContact}</span>
               </div>
               <div className="admin-user-modal-footer-actions">
-                <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setSelectedUser(null)}>
+                <button type="button" className="chart-page-button chart-page-button-ghost" onClick={closeUserDetails}>
                   Cancel
                 </button>
-                <button type="button" className="chart-page-button chart-page-button-primary" onClick={() => setSelectedUser(null)}>
+                <button type="button" className="chart-page-button chart-page-button-primary" onClick={closeUserDetails}>
                   Done
                 </button>
               </div>
@@ -775,41 +930,32 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
 
 function AdminSystemSettingsView({ companyName, components }: { companyName: string; components: SharedAdminComponents }) {
   const { CustomSelect, SetupField } = components;
-  const [workflowSettings, setWorkflowSettings] = useState<WorkspaceToggleSetting[]>([
-    {
-      id: "period-lock",
-      label: "Require month-end lock approval",
-      description: "Prevent accidental posting once a reporting period has been reviewed.",
-      enabled: true
-    },
-    {
-      id: "journal-validation",
-      label: "Block unbalanced journal entries",
-      description: "Keep double-entry validation enforced across manual posting flows.",
-      enabled: true
-    },
-    {
-      id: "tax-reminders",
-      label: "Send BIR deadline reminders",
-      description: "Trigger deadline nudges for monthly, quarterly, and annual compliance calendars.",
-      enabled: true
-    },
-    {
-      id: "payroll-notice",
-      label: "Notify payroll approvers before release",
-      description: "Warn designated admins before payslips and remittance files are finalized.",
-      enabled: false
-    }
-  ]);
+  const [workflowSettings, setWorkflowSettings] = useState<WorkspaceToggleSetting[]>(defaultWorkflowSettings);
   const [invoiceSeries, setInvoiceSeries] = useState("LDG-2026");
   const [lockSchedule, setLockSchedule] = useState("monthly");
   const [defaultApprover, setDefaultApprover] = useState("finance-manager");
   const [deadlineMode, setDeadlineMode] = useState("staggered");
+  const [settingsNotice, setSettingsNotice] = useState<string | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState("Not saved yet");
 
   const toggleSetting = (id: string) => {
     setWorkflowSettings((current) =>
       current.map((setting) => (setting.id === id ? { ...setting, enabled: !setting.enabled } : setting))
     );
+  };
+
+  const handleResetDefaults = () => {
+    setWorkflowSettings(defaultWorkflowSettings);
+    setInvoiceSeries("LDG-2026");
+    setLockSchedule("monthly");
+    setDefaultApprover("finance-manager");
+    setDeadlineMode("staggered");
+    setSettingsNotice("Workspace defaults restored.");
+  };
+
+  const handleSaveSettings = () => {
+    setLastSavedAt(`Saved at ${formatUiTimestamp()}`);
+    setSettingsNotice("Workspace settings saved for this frontend session.");
   };
 
   return (
@@ -818,12 +964,19 @@ function AdminSystemSettingsView({ companyName, components }: { companyName: str
         <div className="admin-table-header">
           <h1>System Settings</h1>
           <div className="chart-accounts-header-actions admin-page-actions">
-            <button type="button" className="chart-page-button chart-page-button-ghost">
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={handleResetDefaults}>
               Reset defaults
             </button>
-            <button type="button" className="chart-page-button chart-page-button-primary">
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleSaveSettings}>
               Save workspace settings
             </button>
+          </div>
+        </div>
+
+        <div className="admin-page-panel-body admin-page-panel-body-compact">
+          <div className="admin-inline-meta-row">
+            <span className="admin-inline-meta-chip">{lastSavedAt}</span>
+            {settingsNotice ? <span className="admin-inline-meta-text">{settingsNotice}</span> : null}
           </div>
         </div>
 
@@ -915,6 +1068,8 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
   const { CustomSelect, SearchIcon } = components;
   const [searchTerm, setSearchTerm] = useState("");
   const [moduleFilter, setModuleFilter] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState<AuditEventRecord | null>(null);
+  const [reviewedEventIds, setReviewedEventIds] = useState<string[]>([]);
 
   const filteredEvents = auditEventSeed.filter((event) => {
     const matchesSearch =
@@ -925,6 +1080,21 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
     return matchesSearch && matchesModule;
   });
 
+  const handleExportLog = () => {
+    const rows = [
+      ["Actor", "Action", "Module", "Target", "Time", "Source"],
+      ...filteredEvents.map((event) => [event.actor, event.action, event.module, event.target, event.time, event.ipAddress])
+    ];
+    const csv = rows
+      .map((row) => row.map((value) => `"${value.replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    downloadTextFile("ledgera-audit-log.csv", csv, "text/csv;charset=utf-8");
+  };
+
+  const markReviewed = (eventId: string) => {
+    setReviewedEventIds((current) => (current.includes(eventId) ? current : [...current, eventId]));
+  };
+
   return (
     <div className="dashboard-content admin-workspace-view admin-view-audit">
       <section className="admin-workspace-main admin-audit-main">
@@ -934,7 +1104,7 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
             <div className="admin-filter-grid admin-filter-grid-single">
               <CustomSelect ariaLabel="Filter audit module" value={moduleFilter} options={auditModuleOptions} onChange={setModuleFilter} />
             </div>
-            <button type="button" className="chart-page-button chart-page-button-ghost">
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={handleExportLog}>
               Export log
             </button>
           </div>
@@ -967,13 +1137,18 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
             <tbody>
               {filteredEvents.length > 0 ? (
                 filteredEvents.map((event) => (
-                  <tr key={event.id}>
+                  <tr key={event.id} onClick={() => setSelectedEvent(event)}>
                     <td><span className="admin-audit-actor-name">{event.actor}</span></td>
                     <td>{event.action}</td>
                     <td><span className="admin-pill admin-pill-module">{event.module}</span></td>
                     <td>{event.target}</td>
                     <td>{event.time}</td>
-                    <td>{event.ipAddress}</td>
+                    <td>
+                      <div className="admin-source-cell">
+                        <span>{event.ipAddress}</span>
+                        {reviewedEventIds.includes(event.id) ? <small>Reviewed</small> : null}
+                      </div>
+                    </td>
                   </tr>
                 ))
               ) : (
@@ -990,6 +1165,60 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
           </table>
         </div>
       </section>
+
+      {selectedEvent ? (
+        <div className="chart-standard-layer admin-audit-dialog-layer" role="dialog" aria-modal="true" aria-label={`${selectedEvent.actor} audit event`}>
+          <button type="button" className="chart-standard-backdrop" aria-label="Close audit event" onClick={() => setSelectedEvent(null)} />
+          <section className="admin-audit-dialog">
+            <div className="chart-standard-dialog-head">
+              <div>
+                <strong>{selectedEvent.action}</strong>
+                <p>{selectedEvent.actor} triggered this action in {companyName}.</p>
+              </div>
+              <button type="button" className="chart-standard-close" onClick={() => setSelectedEvent(null)} aria-label="Close audit event">
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="chart-standard-dialog-body">
+              <div className="admin-audit-detail-grid">
+                <div className="admin-audit-detail-item">
+                  <span>Module</span>
+                  <strong>{selectedEvent.module}</strong>
+                </div>
+                <div className="admin-audit-detail-item">
+                  <span>Time</span>
+                  <strong>{selectedEvent.time}</strong>
+                </div>
+                <div className="admin-audit-detail-item admin-audit-detail-item-full">
+                  <span>Target</span>
+                  <strong>{selectedEvent.target}</strong>
+                </div>
+                <div className="admin-audit-detail-item admin-audit-detail-item-full">
+                  <span>Source</span>
+                  <strong>{selectedEvent.ipAddress}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-standard-dialog-footer">
+              <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setSelectedEvent(null)}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="chart-page-button chart-page-button-primary"
+                onClick={() => {
+                  markReviewed(selectedEvent.id);
+                  setSelectedEvent(null);
+                }}
+              >
+                Mark reviewed
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -999,6 +1228,21 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
   const [workspaceLabel, setWorkspaceLabel] = useState(companyName);
   const [invoiceFooter, setInvoiceFooter] = useState("Thank you for doing business with Ledgera Demo Company.");
   const [accentMode, setAccentMode] = useState("violet");
+  const [previewMode, setPreviewMode] = useState<"invoice" | "statement">("invoice");
+  const [customizationNotice, setCustomizationNotice] = useState<string | null>(null);
+
+  const handleSaveCustomization = () => {
+    setCustomizationNotice(`Customization preview saved at ${formatUiTimestamp()}.`);
+  };
+
+  const handleCopyFooter = async () => {
+    try {
+      await navigator.clipboard.writeText(invoiceFooter);
+      setCustomizationNotice("Invoice footer copied to clipboard.");
+    } catch {
+      setCustomizationNotice("Clipboard access is unavailable in this browser.");
+    }
+  };
 
   return (
     <div className="dashboard-content admin-workspace-view admin-view-customization">
@@ -1006,12 +1250,26 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
         <div className="admin-table-header">
           <h1>Customization</h1>
           <div className="chart-accounts-header-actions admin-page-actions">
-            <button type="button" className="chart-page-button chart-page-button-ghost">
-              Preview documents
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={handleCopyFooter}>
+              Copy footer text
             </button>
-            <button type="button" className="chart-page-button chart-page-button-primary">
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleSaveCustomization}>
               Save customizations
             </button>
+          </div>
+        </div>
+
+        <div className="admin-page-panel-body admin-page-panel-body-compact">
+          <div className="admin-inline-meta-row">
+            <div className="admin-segmented-control" role="tablist" aria-label="Preview mode">
+              <button type="button" className={previewMode === "invoice" ? "admin-segmented-active" : ""} onClick={() => setPreviewMode("invoice")}>
+                Invoice
+              </button>
+              <button type="button" className={previewMode === "statement" ? "admin-segmented-active" : ""} onClick={() => setPreviewMode("statement")}>
+                Statement
+              </button>
+            </div>
+            {customizationNotice ? <span className="admin-inline-meta-text">{customizationNotice}</span> : null}
           </div>
         </div>
 
@@ -1057,7 +1315,7 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
           <div className={`admin-customization-preview admin-customization-preview-${accentMode}`}>
             <div className="admin-customization-preview-head">
               <span>{workspaceLabel}</span>
-              <strong>Invoice and client-facing document preview</strong>
+              <strong>{previewMode === "invoice" ? "Invoice and client-facing document preview" : "Statement and account summary preview"}</strong>
             </div>
             <div className="admin-customization-preview-body">
               <div className="admin-customization-preview-line" />
@@ -1068,7 +1326,7 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
                 <span />
               </div>
             </div>
-            <p>{invoiceFooter}</p>
+            <p>{previewMode === "invoice" ? invoiceFooter : `Statement note for ${workspaceLabel}: balances and payment movement remain aligned.`}</p>
           </div>
           </section>
         </div>
@@ -1080,8 +1338,32 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
 function AdminContributionTablesView({ components }: { components: SharedAdminComponents }) {
   const { CustomSelect } = components;
   const [statusFilter, setStatusFilter] = useState("all");
+  const [tables, setTables] = useState(contributionTablesSeed);
+  const [selectedTable, setSelectedTable] = useState<ContributionTableRecord | null>(null);
+  const [tableNotice, setTableNotice] = useState<string | null>(null);
 
-  const filteredTables = contributionTablesSeed.filter((table) => statusFilter === "all" || table.status === statusFilter);
+  const filteredTables = tables.filter((table) => statusFilter === "all" || table.status === statusFilter);
+
+  const handleImportOfficialTable = () => {
+    setTableNotice(`Official table import checked at ${formatUiTimestamp()}.`);
+  };
+
+  const handleCreateDraft = () => {
+    const draft: ContributionTableRecord = {
+      id: `draft-${Date.now()}`,
+      label: "Quarterly payroll contribution update",
+      coverage: "Upcoming employer/employee contribution adjustments",
+      effectiveDate: "Next review cycle",
+      updateWindow: "Draft created for compliance review",
+      status: "Planned",
+      note: "Frontend draft created for admin review before importing official circular values."
+    };
+
+    setTables((current) => [draft, ...current]);
+    setStatusFilter("all");
+    setSelectedTable(draft);
+    setTableNotice("Update draft added to the contribution table queue.");
+  };
 
   return (
     <div className="dashboard-content admin-workspace-view admin-view-contributions">
@@ -1092,12 +1374,19 @@ function AdminContributionTablesView({ components }: { components: SharedAdminCo
             <div className="admin-filter-grid admin-filter-grid-single">
               <CustomSelect ariaLabel="Filter contribution table status" value={statusFilter} options={contributionStatusOptions} onChange={setStatusFilter} />
             </div>
-            <button type="button" className="chart-page-button chart-page-button-ghost">
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={handleImportOfficialTable}>
               Import official table
             </button>
-            <button type="button" className="chart-page-button chart-page-button-primary">
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleCreateDraft}>
               Create update draft
             </button>
+          </div>
+        </div>
+
+        <div className="admin-page-panel-body admin-page-panel-body-compact">
+          <div className="admin-inline-meta-row">
+            <span className="admin-inline-meta-chip">{tables.length} tables in pipeline</span>
+            {tableNotice ? <span className="admin-inline-meta-text">{tableNotice}</span> : null}
           </div>
         </div>
 
@@ -1115,7 +1404,7 @@ function AdminContributionTablesView({ components }: { components: SharedAdminCo
             <tbody>
               {filteredTables.length > 0 ? (
                 filteredTables.map((table) => (
-                  <tr key={table.id}>
+                  <tr key={table.id} onClick={() => setSelectedTable(table)}>
                     <td>
                       <div className="admin-primary-cell">
                         <strong>{table.label}</strong>
@@ -1144,6 +1433,60 @@ function AdminContributionTablesView({ components }: { components: SharedAdminCo
           </table>
         </div>
       </section>
+
+      {selectedTable ? (
+        <div className="chart-standard-layer admin-audit-dialog-layer" role="dialog" aria-modal="true" aria-label={`${selectedTable.label} details`}>
+          <button type="button" className="chart-standard-backdrop" aria-label="Close contribution table" onClick={() => setSelectedTable(null)} />
+          <section className="admin-audit-dialog">
+            <div className="chart-standard-dialog-head">
+              <div>
+                <strong>{selectedTable.label}</strong>
+                <p>{selectedTable.note}</p>
+              </div>
+              <button type="button" className="chart-standard-close" onClick={() => setSelectedTable(null)} aria-label="Close contribution table">
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="chart-standard-dialog-body">
+              <div className="admin-audit-detail-grid">
+                <div className="admin-audit-detail-item">
+                  <span>Status</span>
+                  <strong>{selectedTable.status}</strong>
+                </div>
+                <div className="admin-audit-detail-item">
+                  <span>Effective date</span>
+                  <strong>{selectedTable.effectiveDate}</strong>
+                </div>
+                <div className="admin-audit-detail-item admin-audit-detail-item-full">
+                  <span>Coverage</span>
+                  <strong>{selectedTable.coverage}</strong>
+                </div>
+                <div className="admin-audit-detail-item admin-audit-detail-item-full">
+                  <span>Update window</span>
+                  <strong>{selectedTable.updateWindow}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="chart-standard-dialog-footer">
+              <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setSelectedTable(null)}>
+                Close
+              </button>
+              <button
+                type="button"
+                className="chart-page-button chart-page-button-primary"
+                onClick={() => {
+                  setTableNotice(`${selectedTable.label} queued for payroll review.`);
+                  setSelectedTable(null);
+                }}
+              >
+                Queue review
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }
