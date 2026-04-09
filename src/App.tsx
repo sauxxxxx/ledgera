@@ -934,6 +934,14 @@ function SettingsIcon() {
   );
 }
 
+function AvatarChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`dashboard-avatar-chevron ${open ? "dashboard-avatar-chevron-open" : ""}`}>
+      <path d="m8 10 4 4 4-4" />
+    </svg>
+  );
+}
+
 function UserCircleIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className="menu-item-icon">
@@ -3346,7 +3354,12 @@ function DashboardShell({
                 aria-haspopup="menu"
                 onClick={() => setAvatarMenuOpen((current) => !current)}
               >
-                {initials}
+                <span className="dashboard-avatar-mark">{initials}</span>
+                <span className="dashboard-avatar-copy">
+                  <strong>{session.fullName}</strong>
+                  <span>{session.email}</span>
+                </span>
+                <AvatarChevronIcon open={avatarMenuOpen} />
               </button>
 
               {avatarMenuOpen ? (

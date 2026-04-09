@@ -393,6 +393,14 @@ function FilterButtonIcon() {
   );
 }
 
+function HeaderActionsChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`chart-header-actions-chevron ${open ? "chart-header-actions-chevron-open" : ""}`}>
+      <path d="m8 10 4 4 4-4" />
+    </svg>
+  );
+}
+
 export function ChartOfAccountsWorkspace({
   companyName,
   components
@@ -408,6 +416,7 @@ export function ChartOfAccountsWorkspace({
   const [statusFilter, setStatusFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
+  const [headerActionsMenuOpen, setHeaderActionsMenuOpen] = useState(false);
   const [sortBy, setSortBy] = useState("code");
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [editingAccount, setEditingAccount] = useState<ChartAccount | null>(null);
@@ -417,6 +426,7 @@ export function ChartOfAccountsWorkspace({
   const [standardChartDialogOpen, setStandardChartDialogOpen] = useState(false);
   const [chartNotice, setChartNotice] = useState<string | null>(null);
   const filterMenuRef = useRef<HTMLDivElement | null>(null);
+  const headerActionsMenuRef = useRef<HTMLDivElement | null>(null);
 
   const buildNewAccountDraft = (): ChartAccount => ({
     id: `manual-${Date.now()}`,
@@ -626,14 +636,41 @@ export function ChartOfAccountsWorkspace({
     };
   }, [filterMenuOpen]);
 
+  useEffect(() => {
+    if (!headerActionsMenuOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!headerActionsMenuRef.current?.contains(event.target as Node)) {
+        setHeaderActionsMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setHeaderActionsMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [headerActionsMenuOpen]);
+
   const openAccountDrawer = (account: ChartAccount) => {
     setFilterMenuOpen(false);
+    setHeaderActionsMenuOpen(false);
     setCreateAccountDraft(null);
     setEditingAccount({ ...account });
   };
 
   const handleAddAccount = () => {
     setFilterMenuOpen(false);
+    setHeaderActionsMenuOpen(false);
     setStandardChartDialogOpen(false);
     setEditingAccount(null);
     setCreateAccountDraft(buildNewAccountDraft());
@@ -641,11 +678,18 @@ export function ChartOfAccountsWorkspace({
 
   const handleOpenStandardChart = () => {
     setFilterMenuOpen(false);
+    setHeaderActionsMenuOpen(false);
     setCreateAccountDraft(null);
     setEditingAccount(null);
     setStandardChartPresetId(chartStandardPresets[0]?.id ?? "");
     setStandardChartMode(accounts.length > 0 ? "merge" : "replace");
     setStandardChartDialogOpen(true);
+  };
+
+  const handleImportCsv = () => {
+    setFilterMenuOpen(false);
+    setHeaderActionsMenuOpen(false);
+    setChartNotice("CSV import will connect here next. For now, load a standard chart or add accounts manually.");
   };
 
   const clearFilters = () => {
@@ -753,12 +797,37 @@ export function ChartOfAccountsWorkspace({
         </div>
 
         <div className="chart-accounts-header-actions">
-          <button type="button" className="chart-page-button chart-page-button-ghost">
-            Import CSV
-          </button>
-          <button type="button" className="chart-page-button chart-page-button-secondary" onClick={handleOpenStandardChart}>
-            Use standard chart
-          </button>
+          <div
+            ref={headerActionsMenuRef}
+            className={`chart-header-actions-menu ${headerActionsMenuOpen ? "chart-header-actions-menu-open" : ""}`}
+          >
+            <button
+              type="button"
+              className="chart-page-button chart-page-button-secondary chart-header-actions-trigger"
+              aria-expanded={headerActionsMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => {
+                setFilterMenuOpen(false);
+                setHeaderActionsMenuOpen((current) => !current);
+              }}
+            >
+              <span>More actions</span>
+              <HeaderActionsChevronIcon open={headerActionsMenuOpen} />
+            </button>
+
+            {headerActionsMenuOpen ? (
+              <div className="chart-header-actions-panel" role="menu" aria-label="Chart setup actions">
+                <button type="button" className="chart-header-actions-item" role="menuitem" onClick={handleImportCsv}>
+                  <strong>Import CSV</strong>
+                  <span>Bring in a prepared account list from your spreadsheet template.</span>
+                </button>
+                <button type="button" className="chart-header-actions-item" role="menuitem" onClick={handleOpenStandardChart}>
+                  <strong>Load standard chart</strong>
+                  <span>Start from a ready-made structure for service, trading, or lean operations.</span>
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button type="button" className="chart-page-button chart-page-button-primary" onClick={handleAddAccount}>
             Add account
           </button>
@@ -786,7 +855,10 @@ export function ChartOfAccountsWorkspace({
                   className={`chart-filter-trigger ${activeFilterCount > 0 ? "chart-filter-trigger-active" : ""}`}
                   aria-expanded={filterMenuOpen}
                   aria-haspopup="dialog"
-                  onClick={() => setFilterMenuOpen((current) => !current)}
+                  onClick={() => {
+                    setHeaderActionsMenuOpen(false);
+                    setFilterMenuOpen((current) => !current);
+                  }}
                 >
                   <FilterButtonIcon />
                   <span>Filter</span>
