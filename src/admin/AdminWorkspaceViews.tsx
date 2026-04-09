@@ -324,16 +324,16 @@ function AdminPageHero({
   tone,
   children
 }: {
-  badge: string;
+  badge?: string;
   children?: ReactNode;
   description?: string;
   title: string;
   tone: "users" | "settings" | "audit" | "customization" | "contributions";
 }) {
   return (
-    <section className={`admin-page-hero admin-page-hero-${tone}`}>
+    <section className={`admin-page-hero admin-page-hero-${tone}${children ? "" : " admin-page-hero-solo"}`}>
       <div className="admin-page-hero-copy">
-        <span className="admin-page-hero-badge">{badge}</span>
+        {badge ? <span className="admin-page-hero-badge">{badge}</span> : null}
         <h1>{title}</h1>
         {description ? <p>{description}</p> : null}
       </div>
@@ -358,177 +358,93 @@ function AdminUsersRolesView({ companyName, components }: { companyName: string;
     return matchesSearch && matchesStatus && matchesDepartment;
   });
 
-  const summaryItems = [
-    { label: "Workspace users", value: adminUsersSeed.length, note: "Seats configured across admin and finance" },
-    { label: "Active users", value: adminUsersSeed.filter((user) => user.status === "Active").length, note: "Can work in the live workspace right now" },
-    { label: "Pending invites", value: adminUsersSeed.filter((user) => user.status === "Invited").length, note: "Awaiting first sign-in and profile setup" },
-    { label: "Role templates", value: adminRolesSeed.length, note: "Reusable access bundles for accounting operations" }
-  ];
-
   return (
     <div className="dashboard-content admin-workspace-view admin-view-users">
-      <AdminPageHero
-        badge="Access control"
-        title="Users & Roles"
-        description={`Control who can work inside ${companyName} and what each role can approve, edit, or review.`}
-        tone="users"
-      >
-        <div className="admin-hero-presence">
-          <div className="admin-hero-presence-stack">
-            {adminUsersSeed.slice(0, 3).map((user) => (
-              <span key={user.id} className={`admin-user-orb admin-user-orb-${user.roleTone}`}>
-                {user.name
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")
-                  .slice(0, 2)}
-              </span>
-            ))}
-          </div>
-          <div className="admin-hero-presence-copy">
-            <strong>{adminUsersSeed.filter((user) => user.status === "Active").length} active operators</strong>
-            <span>Leadership, accounting, and payroll seats mapped to distinct approval roles.</span>
+      <section className="admin-workspace-main">
+        <div className="admin-table-header">
+          <h1>Users &amp; Roles</h1>
+          <div className="chart-accounts-header-actions admin-page-actions">
+            <button type="button" className="chart-page-button chart-page-button-ghost">
+              Export access list
+            </button>
+            <button type="button" className="chart-page-button chart-page-button-primary">
+              Invite user
+            </button>
           </div>
         </div>
-      </AdminPageHero>
 
-      <div className="chart-accounts-header-actions admin-page-actions">
-        <button type="button" className="chart-page-button chart-page-button-ghost">
-          Export access list
-        </button>
-        <button type="button" className="chart-page-button chart-page-button-primary">
-          Invite user
-        </button>
-      </div>
+        <div className="chart-accounts-toolbar">
+          <label className="chart-accounts-search">
+            <SearchIcon />
+            <input
+              type="text"
+              placeholder="Search user, email, or role"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </label>
 
-      <SummaryCards items={summaryItems} label="User and role summary" />
-
-      <section className="admin-workspace-shell">
-        <div className="admin-workspace-main">
-          <div className="chart-accounts-toolbar">
-            <label className="chart-accounts-search">
-              <SearchIcon />
-              <input
-                type="text"
-                placeholder="Search user, email, or role"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-              />
-            </label>
-
-            <div className="admin-filter-grid admin-filter-grid-two">
-              <CustomSelect ariaLabel="Filter user status" value={statusFilter} options={adminUserStatusOptions} onChange={setStatusFilter} />
-              <CustomSelect
-                ariaLabel="Filter user department"
-                value={departmentFilter}
-                options={adminUserDepartmentOptions}
-                onChange={setDepartmentFilter}
-              />
-            </div>
+          <div className="admin-filter-grid admin-filter-grid-two">
+            <CustomSelect ariaLabel="Filter user status" value={statusFilter} options={adminUserStatusOptions} onChange={setStatusFilter} />
+            <CustomSelect
+              ariaLabel="Filter user department"
+              value={departmentFilter}
+              options={adminUserDepartmentOptions}
+              onChange={setDepartmentFilter}
+            />
           </div>
+        </div>
 
-          <div className="chart-table-panel">
-            <table className="chart-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Department</th>
-                  <th>Status</th>
-                  <th>Last active</th>
-                  <th className="chart-table-actions-col">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <tr key={user.id}>
-                      <td>
-                        <div className="admin-primary-cell">
-                          <strong>{user.name}</strong>
-                          <span>{user.email}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`admin-pill admin-pill-role-${user.roleTone}`}>{user.role}</span>
-                      </td>
-                      <td>{user.department}</td>
-                      <td>
-                        <span className={`admin-pill admin-pill-status-${user.status.toLowerCase().replace(/\s+/g, "-")}`}>{user.status}</span>
-                      </td>
-                      <td>{user.lastActive}</td>
-                      <td className="chart-table-actions-col">
-                        <button type="button" className="chart-row-action" aria-label={`Open ${user.name}`}>
-                          <RowOpenIcon />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6}>
-                      <div className="chart-empty-state">
-                        <strong>No users match the current filters.</strong>
-                        <p>Try a broader search or reset the department and status filters.</p>
+        <div className="chart-table-panel">
+          <table className="chart-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Department</th>
+                <th>Status</th>
+                <th>Last active</th>
+                <th className="chart-table-actions-col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="admin-primary-cell">
+                        <strong>{user.name}</strong>
+                        <span>{user.email}</span>
                       </div>
                     </td>
+                    <td>
+                      <span className={`admin-pill admin-pill-role-${user.roleTone}`}>{user.role}</span>
+                    </td>
+                    <td>{user.department}</td>
+                    <td>
+                      <span className={`admin-pill admin-pill-status-${user.status.toLowerCase().replace(/\s+/g, "-")}`}>{user.status}</span>
+                    </td>
+                    <td>{user.lastActive}</td>
+                    <td className="chart-table-actions-col">
+                      <button type="button" className="chart-row-action" aria-label={`Open ${user.name}`}>
+                        <RowOpenIcon />
+                      </button>
+                    </td>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="chart-empty-state">
+                      <strong>No users match the current filters.</strong>
+                      <p>Try a broader search or reset the department and status filters.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
-
-        <aside className="admin-side-stack">
-          <section className="dashboard-panel admin-panel-compact">
-            <div className="chart-sheet-section-head">
-              <strong>Role templates</strong>
-              <span>Keep permissions predictable as the team grows.</span>
-            </div>
-
-            <div className="admin-card-stack">
-              {adminRolesSeed.map((role) => (
-                <article key={role.id} className="admin-role-card">
-                  <div className="admin-role-card-head">
-                    <strong>{role.name}</strong>
-                    <span>{role.memberCount} assigned</span>
-                  </div>
-                  <p>{role.description}</p>
-                  <div className="admin-bullet-list">
-                    {role.permissions.map((permission) => (
-                      <div key={permission} className="chart-sheet-list-item">
-                        <span className="chart-sheet-list-dot" />
-                        <p>{permission}</p>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="dashboard-panel admin-panel-compact">
-            <div className="chart-sheet-section-head">
-              <strong>Admin notes</strong>
-              <span>Front-end planning cues based on the current system requirements.</span>
-            </div>
-
-            <div className="admin-bullet-list">
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>External auditor access should stay read-only and time-bound.</p>
-              </div>
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>Payroll roles need access to contribution tables without changing chart defaults.</p>
-              </div>
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>Approval-sensitive actions should surface in the audit trail immediately after save.</p>
-              </div>
-            </div>
-          </section>
-        </aside>
       </section>
     </div>
   );
@@ -573,46 +489,23 @@ function AdminSystemSettingsView({ companyName, components }: { companyName: str
     );
   };
 
-  const summaryItems = [
-    { label: "Live safeguards", value: workflowSettings.filter((setting) => setting.enabled).length, note: "Policies currently enforced in the workspace" },
-    { label: "Default approver", value: "1", note: "Primary approval owner for admin-sensitive flows" },
-    { label: "Invoice prefix", value: invoiceSeries, note: "Current official invoice numbering series" },
-    { label: "Tax reminder mode", value: deadlineMode === "staggered" ? "Staggered" : "Manual", note: "How compliance deadlines notify the team" }
-  ];
-
   return (
     <div className="dashboard-content admin-workspace-view admin-view-settings">
-      <AdminPageHero
-        badge="Workspace policy"
-        title="System Settings"
-        description={`Set the operational defaults, approval rules, and numbering behavior for ${companyName}.`}
-        tone="settings"
-      >
-        <div className="admin-settings-signal">
-          <div className="admin-settings-signal-line">
-            <span>Approval cadence</span>
-            <strong>{lockSchedule}</strong>
-          </div>
-          <div className="admin-settings-signal-line">
-            <span>Reminder mode</span>
-            <strong>{deadlineMode === "staggered" ? "Staggered" : "Manual"}</strong>
+      <section className="admin-workspace-main">
+        <div className="admin-table-header">
+          <h1>System Settings</h1>
+          <div className="chart-accounts-header-actions admin-page-actions">
+            <button type="button" className="chart-page-button chart-page-button-ghost">
+              Reset defaults
+            </button>
+            <button type="button" className="chart-page-button chart-page-button-primary">
+              Save workspace settings
+            </button>
           </div>
         </div>
-      </AdminPageHero>
 
-      <div className="chart-accounts-header-actions admin-page-actions">
-        <button type="button" className="chart-page-button chart-page-button-ghost">
-          Reset defaults
-        </button>
-        <button type="button" className="chart-page-button chart-page-button-primary">
-          Save workspace settings
-        </button>
-      </div>
-
-      <SummaryCards items={summaryItems} label="System settings summary" />
-
-      <section className="admin-two-column-grid">
-        <section className="dashboard-panel">
+        <div className="admin-two-column-grid admin-page-panel-body">
+          <section className="dashboard-panel">
           <div className="chart-sheet-section-head">
             <strong>Operational safeguards</strong>
             <span>These switches control how strict the workspace behaves before data reaches reports and compliance outputs.</span>
@@ -637,9 +530,9 @@ function AdminSystemSettingsView({ companyName, components }: { companyName: str
               </button>
             ))}
           </div>
-        </section>
+          </section>
 
-        <section className="dashboard-panel">
+          <section className="dashboard-panel">
           <div className="chart-sheet-section-head">
             <strong>Default admin configuration</strong>
             <span>Front-end scaffolding for the controls the admin team will eventually persist.</span>
@@ -688,7 +581,8 @@ function AdminSystemSettingsView({ companyName, components }: { companyName: str
               />
             </SetupField>
           </div>
-        </section>
+          </section>
+        </div>
       </section>
     </div>
   );
@@ -710,25 +604,19 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
 
   return (
     <div className="dashboard-content admin-workspace-view admin-view-audit">
-      <AdminPageHero
-        badge="Event ledger"
-        title="Audit Trail"
-        tone="audit"
-      >
-        <div className="admin-audit-hero-card">
-          <strong>Latest monitored window</strong>
-          <span>Today, 9:18 AM to now</span>
-          <small>Every admin, payroll, and accounting touchpoint should remain reviewable.</small>
-        </div>
-      </AdminPageHero>
-
-      <div className="chart-accounts-header-actions admin-page-actions">
-        <button type="button" className="chart-page-button chart-page-button-ghost">
-          Export log
-        </button>
-      </div>
-
       <section className="admin-workspace-main admin-audit-main">
+        <div className="admin-table-header">
+          <h1>Audit Trail</h1>
+          <div className="admin-table-header-actions">
+            <div className="admin-filter-grid admin-filter-grid-single">
+              <CustomSelect ariaLabel="Filter audit module" value={moduleFilter} options={auditModuleOptions} onChange={setModuleFilter} />
+            </div>
+            <button type="button" className="chart-page-button chart-page-button-ghost">
+              Export log
+            </button>
+          </div>
+        </div>
+
         <div className="chart-accounts-toolbar">
           <label className="chart-accounts-search">
             <SearchIcon />
@@ -739,42 +627,44 @@ function AdminAuditTrailView({ companyName, components }: { companyName: string;
               onChange={(event) => setSearchTerm(event.target.value)}
             />
           </label>
-
-          <div className="admin-filter-grid admin-filter-grid-single">
-            <CustomSelect ariaLabel="Filter audit module" value={moduleFilter} options={auditModuleOptions} onChange={setModuleFilter} />
-          </div>
         </div>
 
-        <div className="admin-audit-timeline">
-          {filteredEvents.length > 0 ? (
-            filteredEvents.map((event, index) => (
-              <article key={event.id} className="admin-audit-event">
-                <div className="admin-audit-rail" aria-hidden="true">
-                  <span className="admin-audit-dot" />
-                  {index < filteredEvents.length - 1 ? <span className="admin-audit-line" /> : null}
-                </div>
-                <div className="admin-audit-card">
-                  <div className="admin-audit-card-head">
-                    <div className="admin-audit-card-meta">
-                      <span className="admin-audit-actor">{event.actor}</span>
-                      <strong>{event.action}</strong>
+        <div className="chart-table-panel">
+          <table className="chart-table">
+            <thead>
+              <tr>
+                <th>Actor</th>
+                <th>Action</th>
+                <th>Module</th>
+                <th>Target</th>
+                <th>Time</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => (
+                  <tr key={event.id}>
+                    <td><span className="admin-audit-actor-name">{event.actor}</span></td>
+                    <td>{event.action}</td>
+                    <td><span className="admin-pill admin-pill-module">{event.module}</span></td>
+                    <td>{event.target}</td>
+                    <td>{event.time}</td>
+                    <td>{event.ipAddress}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="chart-empty-state">
+                      <strong>No audit records match the current filters.</strong>
+                      <p>Try clearing the module filter or searching for a broader actor or action keyword.</p>
                     </div>
-                    <span className="admin-pill admin-pill-module">{event.module}</span>
-                  </div>
-                  <p className="admin-audit-target">{event.target}</p>
-                  <div className="admin-audit-card-footer">
-                    <span>{event.time}</span>
-                    <span>{event.ipAddress}</span>
-                  </div>
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="chart-empty-state">
-              <strong>No audit records match the current filters.</strong>
-              <p>Try clearing the module filter or searching for a broader actor or action keyword.</p>
-            </div>
-          )}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
@@ -787,41 +677,23 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
   const [invoiceFooter, setInvoiceFooter] = useState("Thank you for doing business with Ledgera Demo Company.");
   const [accentMode, setAccentMode] = useState("violet");
 
-  const summaryItems = [
-    { label: "Live custom modules", value: customizationModulesSeed.filter((module) => module.stage === "Live").length, note: "Extensions already reflected in the dashboard" },
-    { label: "Planned custom blocks", value: customizationModulesSeed.filter((module) => module.stage === "Planned").length, note: "Reserved UI surfaces for future upgrades" },
-    { label: "Document templates", value: "3", note: "Invoice, receipt, and payroll-facing output templates" },
-    { label: "Workspace brand", value: workspaceLabel, note: "Current customer-facing workspace label" }
-  ];
-
   return (
     <div className="dashboard-content admin-workspace-view admin-view-customization">
-      <AdminPageHero
-        badge="Brand surface"
-        title="Customization"
-        description={`Adjust the front-end presentation of ${companyName} while keeping the current Ledgera dashboard style intact.`}
-        tone="customization"
-      >
-        <div className={`admin-customization-swatches admin-customization-swatches-${accentMode}`}>
-          <span />
-          <span />
-          <span />
+      <section className="admin-workspace-main">
+        <div className="admin-table-header">
+          <h1>Customization</h1>
+          <div className="chart-accounts-header-actions admin-page-actions">
+            <button type="button" className="chart-page-button chart-page-button-ghost">
+              Preview documents
+            </button>
+            <button type="button" className="chart-page-button chart-page-button-primary">
+              Save customizations
+            </button>
+          </div>
         </div>
-      </AdminPageHero>
 
-      <div className="chart-accounts-header-actions admin-page-actions">
-        <button type="button" className="chart-page-button chart-page-button-ghost">
-          Preview documents
-        </button>
-        <button type="button" className="chart-page-button chart-page-button-primary">
-          Save customizations
-        </button>
-      </div>
-
-      <SummaryCards items={summaryItems} label="Customization summary" />
-
-      <section className="admin-two-column-grid">
-        <section className="dashboard-panel">
+        <div className="admin-two-column-grid admin-page-panel-body">
+          <section className="dashboard-panel">
           <div className="chart-sheet-section-head">
             <strong>Workspace presentation</strong>
             <span>These are visual and copy-facing controls only for now.</span>
@@ -851,9 +723,9 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
               </SetupField>
             </div>
           </div>
-        </section>
+          </section>
 
-        <section className="dashboard-panel admin-customization-preview-panel">
+          <section className="dashboard-panel admin-customization-preview-panel">
           <div className="chart-sheet-section-head">
             <strong>Live preview</strong>
             <span>A front-end composition preview so this page reads differently from the settings console.</span>
@@ -875,26 +747,8 @@ function AdminCustomizationView({ companyName, components }: { companyName: stri
             </div>
             <p>{invoiceFooter}</p>
           </div>
-
-          <div className="chart-sheet-section-head">
-            <strong>Modular extensions</strong>
-            <span>Future-proof front-end placeholders aligned with the requirements document.</span>
-          </div>
-
-          <div className="admin-card-stack">
-            {customizationModulesSeed.map((module) => (
-              <article key={module.id} className="admin-module-card">
-                <div className="admin-module-card-head">
-                  <strong>{module.title}</strong>
-                  <span className={`admin-pill ${module.stage === "Live" ? "admin-pill-stage-live" : "admin-pill-stage-planned"}`}>
-                    {module.stage}
-                  </span>
-                </div>
-                <p>{module.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+          </section>
+        </div>
       </section>
     </div>
   );
@@ -906,111 +760,66 @@ function AdminContributionTablesView({ components }: { components: SharedAdminCo
 
   const filteredTables = contributionTablesSeed.filter((table) => statusFilter === "all" || table.status === statusFilter);
 
-  const summaryItems = [
-    { label: "Contribution tables", value: contributionTablesSeed.length, note: "Core payroll-linked government tables tracked in admin" },
-    { label: "Current", value: contributionTablesSeed.filter((table) => table.status === "Current").length, note: "Already reflected in payroll logic" },
-    { label: "Review due", value: contributionTablesSeed.filter((table) => table.status === "Review due").length, note: "Need admin validation before the next cycle" },
-    { label: "Planned", value: contributionTablesSeed.filter((table) => table.status === "Planned").length, note: "Prepared for the next effective date" }
-  ];
-
   return (
     <div className="dashboard-content admin-workspace-view admin-view-contributions">
-      <AdminPageHero
-        badge="Payroll reference"
-        title="Contribution Tables"
-        description="Manage the payroll-linked government contribution references used in salary and remittance calculations."
-        tone="contributions"
-      >
-        <div className="admin-contribution-hero-card">
-          <strong>Next review checkpoint</strong>
-          <span>PhilHealth premium table</span>
-          <small>Review due before the next payroll cycle closes.</small>
-        </div>
-      </AdminPageHero>
-
-      <div className="chart-accounts-header-actions admin-page-actions">
-        <button type="button" className="chart-page-button chart-page-button-ghost">
-          Import official table
-        </button>
-        <button type="button" className="chart-page-button chart-page-button-primary">
-          Create update draft
-        </button>
-      </div>
-
-      <SummaryCards items={summaryItems} label="Contribution table summary" />
-
-      <section className="admin-workspace-shell">
-        <div className="admin-workspace-main">
-          <div className="chart-accounts-toolbar">
-            <div className="admin-toolbar-copy">
-              <strong>Contribution schedule references</strong>
-              <span>Front-end coverage for SSS, PhilHealth, Pag-IBIG, and withholding-tax maintenance.</span>
-            </div>
-
+      <section className="admin-workspace-main">
+        <div className="admin-table-header">
+          <h1>Contribution Tables</h1>
+          <div className="admin-table-header-actions">
             <div className="admin-filter-grid admin-filter-grid-single">
               <CustomSelect ariaLabel="Filter contribution table status" value={statusFilter} options={contributionStatusOptions} onChange={setStatusFilter} />
             </div>
-          </div>
-
-          <div className="admin-contribution-board">
-            {filteredTables.length > 0 ? (
-              filteredTables.map((table) => (
-                <article key={table.id} className="admin-contribution-card">
-                  <div className="admin-contribution-card-head">
-                    <div className="admin-primary-cell">
-                      <strong>{table.label}</strong>
-                      <span>{table.note}</span>
-                    </div>
-                    <span className={`admin-pill admin-pill-status-${table.status.toLowerCase().replace(/\s+/g, "-")}`}>{table.status}</span>
-                  </div>
-                  <div className="admin-contribution-card-grid">
-                    <div>
-                      <span>Coverage</span>
-                      <strong>{table.coverage}</strong>
-                    </div>
-                    <div>
-                      <span>Effective date</span>
-                      <strong>{table.effectiveDate}</strong>
-                    </div>
-                    <div>
-                      <span>Update window</span>
-                      <strong>{table.updateWindow}</strong>
-                    </div>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="chart-empty-state">
-                <strong>No contribution tables match the selected status.</strong>
-                <p>Switch to another status filter to review the rest of the payroll table pipeline.</p>
-              </div>
-            )}
+            <button type="button" className="chart-page-button chart-page-button-ghost">
+              Import official table
+            </button>
+            <button type="button" className="chart-page-button chart-page-button-primary">
+              Create update draft
+            </button>
           </div>
         </div>
 
-        <aside className="admin-side-stack">
-          <section className="dashboard-panel admin-panel-compact">
-            <div className="chart-sheet-section-head">
-              <strong>Update checklist</strong>
-              <span>What the final connected workflow will need after the frontend is approved.</span>
-            </div>
-
-            <div className="admin-bullet-list">
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>Version each table by effectivity date so payroll reruns remain historically accurate.</p>
-              </div>
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>Preview the impact on sample payslips before publishing new contribution rates.</p>
-              </div>
-              <div className="chart-sheet-list-item">
-                <span className="chart-sheet-list-dot" />
-                <p>Log every publish action to the audit trail for later compliance review.</p>
-              </div>
-            </div>
-          </section>
-        </aside>
+        <div className="chart-table-panel">
+          <table className="chart-table">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th>Coverage</th>
+                <th>Effective date</th>
+                <th>Update window</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTables.length > 0 ? (
+                filteredTables.map((table) => (
+                  <tr key={table.id}>
+                    <td>
+                      <div className="admin-primary-cell">
+                        <strong>{table.label}</strong>
+                        <span>{table.note}</span>
+                      </div>
+                    </td>
+                    <td>{table.coverage}</td>
+                    <td>{table.effectiveDate}</td>
+                    <td>{table.updateWindow}</td>
+                    <td>
+                      <span className={`admin-pill admin-pill-status-${table.status.toLowerCase().replace(/\s+/g, "-")}`}>{table.status}</span>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="chart-empty-state">
+                      <strong>No contribution tables match the selected status.</strong>
+                      <p>Switch to another status filter to review the rest of the payroll table pipeline.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );
