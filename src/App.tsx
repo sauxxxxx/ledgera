@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { AdminWorkspaceRouter } from "./admin/AdminWorkspaceViews";
 import { ChartOfAccountsWorkspace } from "./accounting/ChartOfAccountsView";
+import { BankingWorkspace } from "./banking/BankingWorkspaceView";
 import { ClientsWorkspace } from "./master-data/ClientsView";
 import { EmployeesWorkspace } from "./master-data/EmployeesView";
 import { SuppliersWorkspace } from "./master-data/SuppliersView";
@@ -34,6 +35,11 @@ type WorkspaceView =
   | "suppliers"
   | "employees"
   | "chart-of-accounts"
+  | "banking-overview"
+  | "bank-accounts"
+  | "bank-transactions"
+  | "bank-rules"
+  | "bank-reconciliation"
   | "company-profile"
   | "users-roles"
   | "system-settings"
@@ -46,6 +52,7 @@ type SidebarIconKind =
   | "masterData"
   | "salesBilling"
   | "receivables"
+  | "banking"
   | "accounting"
   | "reports"
   | "payroll"
@@ -792,6 +799,16 @@ function SidebarSectionIcon({ kind }: { kind: SidebarIconKind }) {
           <path d="M11.5 12l-3.5 3.5 3.5 3.5" />
         </svg>
       );
+    case "banking":
+      return (
+        <svg viewBox="0 0 24 24" aria-hidden="true" className="dashboard-section-icon">
+          <path d="M4.75 8.25h14.5a1.5 1.5 0 0 1 1.5 1.5v7a1.5 1.5 0 0 1-1.5 1.5H4.75a1.5 1.5 0 0 1-1.5-1.5v-7a1.5 1.5 0 0 1 1.5-1.5Z" />
+          <path d="M6.25 8.25V6.5a1.5 1.5 0 0 1 1.5-1.5h8.5a1.5 1.5 0 0 1 1.5 1.5v1.75" />
+          <path d="M15.25 13.25h2.5" />
+          <path d="M6.75 12.5h4.5" />
+          <path d="M6.75 15.25h3" />
+        </svg>
+      );
     case "accounting":
       return (
         <svg viewBox="0 0 24 24" aria-hidden="true" className="dashboard-section-icon">
@@ -1119,6 +1136,18 @@ const sidebarSections: SidebarSection[] = [
           { label: "Accounts Receivable" },
           { label: "Accounts Payable" },
           { label: "Aging Reports" }
+        ]
+      },
+      {
+        id: "banking",
+        icon: "banking",
+        label: "Banking",
+        children: [
+          { id: "banking-overview", label: "Overview" },
+          { id: "bank-accounts", label: "Bank Accounts" },
+          { id: "bank-transactions", label: "Transactions" },
+          { id: "bank-rules", label: "Rules" },
+          { id: "bank-reconciliation", label: "Reconciliation" }
         ]
       },
       {
@@ -2697,6 +2726,22 @@ function CompanySetupScreen({
       return (
         <ChartOfAccountsWorkspace
           companyName={formData.workspaceName}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (
+      activeWorkspaceView === "banking-overview" ||
+      activeWorkspaceView === "bank-accounts" ||
+      activeWorkspaceView === "bank-transactions" ||
+      activeWorkspaceView === "bank-rules" ||
+      activeWorkspaceView === "bank-reconciliation"
+    ) {
+      return (
+        <BankingWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
           components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
         />
       );

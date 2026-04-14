@@ -7372,6 +7372,126 @@ input {
   line-height: 1.55;
 }
 
+.banking-workspace-view .chart-accounts-summary {
+  margin: 0;
+}
+
+.banking-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.banking-panel-subhead {
+  padding: 4px 18px 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid rgba(31, 39, 55, 0.06);
+}
+
+.banking-panel-subhead div {
+  display: grid;
+  gap: 4px;
+}
+
+.banking-panel-subhead strong {
+  color: #262a3d;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.banking-panel-subhead span {
+  color: #81879a;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.banking-panel-subhead > span {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(122, 92, 255, 0.09);
+  color: #6849f7;
+  font-weight: 600;
+}
+
+.banking-amount-positive {
+  color: #228b56;
+  font-weight: 600;
+}
+
+.banking-amount-negative {
+  color: #a06c14;
+  font-weight: 600;
+}
+
+.banking-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.banking-row-actions .chart-page-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+.banking-status-connected,
+.banking-status-matched,
+.banking-status-categorized,
+.banking-status-active,
+.banking-status-reconciled {
+  background: rgba(49, 178, 107, 0.12);
+  color: #228b56;
+}
+
+.banking-status-csv-import,
+.banking-status-uncategorized,
+.banking-status-open {
+  background: rgba(199, 154, 52, 0.12);
+  color: #a06c14;
+}
+
+.banking-status-manual,
+.banking-status-excluded,
+.banking-status-inactive {
+  background: rgba(160, 168, 186, 0.14);
+  color: #6f7688;
+}
+
+.banking-account-dialog {
+  width: min(620px, 100%);
+}
+
+@media (max-width: 980px) {
+  .banking-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .banking-panel-subhead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .banking-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .banking-row-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .banking-row-actions .chart-page-button {
+    width: 100%;
+  }
+}
+
 .admin-customization-preview-panel {
   align-content: start;
 }
