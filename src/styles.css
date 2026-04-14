@@ -7466,6 +7466,163 @@ input {
   width: min(620px, 100%);
 }
 
+.sales-workspace-view .chart-accounts-summary {
+  margin: 0;
+}
+
+.sales-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.sales-panel-subhead {
+  padding: 4px 18px 14px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  border-top: 1px solid rgba(31, 39, 55, 0.06);
+}
+
+.sales-panel-subhead div {
+  display: grid;
+  gap: 4px;
+}
+
+.sales-panel-subhead strong {
+  color: #262a3d;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sales-panel-subhead span {
+  color: #81879a;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.sales-panel-subhead > span {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(122, 92, 255, 0.09);
+  color: #6849f7;
+  font-weight: 600;
+}
+
+.sales-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sales-row-actions .chart-page-button {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+.sales-status-paid,
+.sales-status-issued,
+.sales-status-active,
+.sales-status-matched {
+  background: rgba(49, 178, 107, 0.12);
+  color: #228b56;
+}
+
+.sales-status-sent,
+.sales-status-draft,
+.sales-status-pending,
+.sales-status-awaiting-match {
+  background: rgba(122, 92, 255, 0.1);
+  color: #6849f7;
+}
+
+.sales-status-overdue,
+.sales-status-flagged {
+  background: rgba(194, 71, 71, 0.1);
+  color: #b24747;
+}
+
+.sales-status-partial,
+.sales-status-paused,
+.sales-status-void {
+  background: rgba(199, 154, 52, 0.12);
+  color: #a06c14;
+}
+
+.sales-action-dialog {
+  width: min(700px, 100%);
+  max-height: min(620px, calc(100svh - 56px));
+}
+
+.sales-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.sales-form-grid .setup-field:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.sales-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sales-dialog-card {
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(248, 247, 253, 0.78);
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.sales-dialog-card span {
+  color: #8a90a4;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sales-dialog-card strong {
+  color: #262a3d;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.sales-dialog-card p {
+  margin: 0;
+  color: #737a8f;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.sales-dialog-footer {
+  justify-content: space-between;
+}
+
+.sales-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.sales-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .banking-action-dialog {
   width: min(680px, 100%);
   max-height: min(620px, calc(100svh - 56px));
@@ -7571,6 +7728,15 @@ input {
 }
 
 @media (max-width: 980px) {
+  .sales-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sales-panel-subhead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .banking-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -7582,6 +7748,42 @@ input {
 }
 
 @media (max-width: 640px) {
+  .sales-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-form-grid,
+  .sales-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sales-form-grid .setup-field:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .sales-row-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sales-row-actions .chart-page-button,
+  .sales-row-actions .chart-row-action {
+    width: 100%;
+  }
+
+  .sales-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sales-dialog-actions {
+    width: 100%;
+  }
+
+  .sales-dialog-actions .chart-page-button {
+    flex: 1;
+  }
+
   .banking-summary {
     grid-template-columns: 1fr;
   }

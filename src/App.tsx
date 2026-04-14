@@ -4,6 +4,7 @@ import { ChartOfAccountsWorkspace } from "./accounting/ChartOfAccountsView";
 import { BankingWorkspace } from "./banking/BankingWorkspaceView";
 import { ClientsWorkspace } from "./master-data/ClientsView";
 import { EmployeesWorkspace } from "./master-data/EmployeesView";
+import { SalesBillingWorkspace } from "./sales/SalesBillingWorkspaceView";
 import { SuppliersWorkspace } from "./master-data/SuppliersView";
 
 const MOCK_SESSION_KEY = "ledgera.dev.mock-session";
@@ -35,6 +36,11 @@ type WorkspaceView =
   | "suppliers"
   | "employees"
   | "chart-of-accounts"
+  | "sales-overview"
+  | "client-packages"
+  | "invoices"
+  | "acknowledgment-receipts"
+  | "payment-tracking"
   | "banking-overview"
   | "bank-accounts"
   | "bank-transactions"
@@ -1123,9 +1129,11 @@ const sidebarSections: SidebarSection[] = [
         icon: "salesBilling",
         label: "Sales & Billing",
         children: [
-          { label: "Client Packages" },
-          { label: "Invoices" },
-          { label: "Acknowledgment Receipts" }
+          { id: "sales-overview", label: "Overview" },
+          { id: "client-packages", label: "Client Packages" },
+          { id: "invoices", label: "Invoices" },
+          { id: "acknowledgment-receipts", label: "Acknowledgment Receipts" },
+          { id: "payment-tracking", label: "Payment Tracking" }
         ]
       },
       {
@@ -2732,6 +2740,22 @@ function CompanySetupScreen({
     }
 
     if (
+      activeWorkspaceView === "sales-overview" ||
+      activeWorkspaceView === "client-packages" ||
+      activeWorkspaceView === "invoices" ||
+      activeWorkspaceView === "acknowledgment-receipts" ||
+      activeWorkspaceView === "payment-tracking"
+    ) {
+      return (
+        <SalesBillingWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (
       activeWorkspaceView === "banking-overview" ||
       activeWorkspaceView === "bank-accounts" ||
       activeWorkspaceView === "bank-transactions" ||
@@ -3307,13 +3331,36 @@ function DashboardShell({
   }, []);
 
   useEffect(() => {
-    const nextGroupId =
+    let nextGroupId = "admin";
+
+    if (
       activeWorkspaceView === "clients" ||
       activeWorkspaceView === "suppliers" ||
       activeWorkspaceView === "employees" ||
       activeWorkspaceView === "chart-of-accounts"
-        ? "master-data"
-        : "admin";
+    ) {
+      nextGroupId = "master-data";
+    }
+
+    if (
+      activeWorkspaceView === "sales-overview" ||
+      activeWorkspaceView === "client-packages" ||
+      activeWorkspaceView === "invoices" ||
+      activeWorkspaceView === "acknowledgment-receipts" ||
+      activeWorkspaceView === "payment-tracking"
+    ) {
+      nextGroupId = "sales-billing";
+    }
+
+    if (
+      activeWorkspaceView === "banking-overview" ||
+      activeWorkspaceView === "bank-accounts" ||
+      activeWorkspaceView === "bank-transactions" ||
+      activeWorkspaceView === "bank-rules" ||
+      activeWorkspaceView === "bank-reconciliation"
+    ) {
+      nextGroupId = "banking";
+    }
 
     setOpenGroupIds((current) => (current.includes(nextGroupId) ? current : [...current, nextGroupId]));
   }, [activeWorkspaceView]);
