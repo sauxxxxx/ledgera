@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { AdminWorkspaceRouter } from "./admin/AdminWorkspaceViews";
 import { ChartOfAccountsWorkspace } from "./accounting/ChartOfAccountsView";
+import { ClientsWorkspace } from "./master-data/ClientsView";
+import { EmployeesWorkspace } from "./master-data/EmployeesView";
+import { SuppliersWorkspace } from "./master-data/SuppliersView";
 
 const MOCK_SESSION_KEY = "ledgera.dev.mock-session";
 const SIDEBAR_PREFERENCES_KEY = "ledgera.dashboard-sidebar";
@@ -27,6 +30,9 @@ type AuthTransitionState = {
 };
 
 type WorkspaceView =
+  | "clients"
+  | "suppliers"
+  | "employees"
   | "chart-of-accounts"
   | "company-profile"
   | "users-roles"
@@ -1089,9 +1095,9 @@ const sidebarSections: SidebarSection[] = [
         icon: "masterData",
         label: "Master Data",
         children: [
-          { label: "Clients" },
-          { label: "Suppliers" },
-          { label: "Employees" },
+          { id: "clients", label: "Clients" },
+          { id: "suppliers", label: "Suppliers" },
+          { id: "employees", label: "Employees" },
           { id: "chart-of-accounts", label: "Chart of Accounts" }
         ]
       },
@@ -2660,6 +2666,33 @@ function CompanySetupScreen({
   }
 
   if (setupComplete) {
+    if (activeWorkspaceView === "clients") {
+      return (
+        <ClientsWorkspace
+          companyName={formData.workspaceName}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "suppliers") {
+      return (
+        <SuppliersWorkspace
+          companyName={formData.workspaceName}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (activeWorkspaceView === "employees") {
+      return (
+        <EmployeesWorkspace
+          companyName={formData.workspaceName}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
     if (activeWorkspaceView === "chart-of-accounts") {
       return (
         <ChartOfAccountsWorkspace
@@ -3229,7 +3262,13 @@ function DashboardShell({
   }, []);
 
   useEffect(() => {
-    const nextGroupId = activeWorkspaceView === "chart-of-accounts" ? "master-data" : "admin";
+    const nextGroupId =
+      activeWorkspaceView === "clients" ||
+      activeWorkspaceView === "suppliers" ||
+      activeWorkspaceView === "employees" ||
+      activeWorkspaceView === "chart-of-accounts"
+        ? "master-data"
+        : "admin";
 
     setOpenGroupIds((current) => (current.includes(nextGroupId) ? current : [...current, nextGroupId]));
   }, [activeWorkspaceView]);
