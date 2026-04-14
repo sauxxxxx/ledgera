@@ -7466,6 +7466,110 @@ input {
   width: min(620px, 100%);
 }
 
+.banking-action-dialog {
+  width: min(680px, 100%);
+  max-height: min(620px, calc(100svh - 56px));
+}
+
+.banking-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.banking-form-grid-single {
+  grid-template-columns: 1fr;
+  margin-top: 14px;
+}
+
+.banking-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.banking-dialog-card {
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(248, 247, 253, 0.78);
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.banking-dialog-card span {
+  color: #8a90a4;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.banking-dialog-card strong {
+  color: #262a3d;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.banking-dialog-card p {
+  margin: 0;
+  color: #737a8f;
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
+
+.banking-review-list {
+  display: grid;
+  gap: 10px;
+}
+
+.banking-review-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.banking-review-item div {
+  display: grid;
+  gap: 4px;
+}
+
+.banking-review-item strong {
+  color: #25293b;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.banking-review-item span {
+  color: #7f8599;
+  font-size: 0.74rem;
+}
+
+.banking-dialog-footer {
+  justify-content: space-between;
+}
+
+.banking-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.banking-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 980px) {
   .banking-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7480,6 +7584,25 @@ input {
 @media (max-width: 640px) {
   .banking-summary {
     grid-template-columns: 1fr;
+  }
+
+  .banking-form-grid,
+  .banking-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .banking-review-item,
+  .banking-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .banking-dialog-actions {
+    width: 100%;
+  }
+
+  .banking-dialog-actions .chart-page-button {
+    flex: 1;
   }
 
   .banking-row-actions {

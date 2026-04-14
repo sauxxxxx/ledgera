@@ -90,6 +90,13 @@ type ReconciliationRecord = {
   status: ReconciliationStatus;
 };
 
+type BankingDialogAction = "add-account" | "import-statement" | "review-transactions" | "create-rule" | "export-reconciliation";
+
+type TransactionActionDraft = {
+  status: BankTransactionStatus;
+  transaction: BankTransactionRecord;
+};
+
 const bankAccountsSeed: BankAccountRecord[] = [
   {
     id: "bpi-operating",
@@ -236,6 +243,19 @@ const transactionStatusOptions: SelectOption[] = [
   { value: "Excluded", label: "Excluded" }
 ];
 
+const accountStatusOptions: SelectOption[] = [
+  { value: "Connected", label: "Connected feed" },
+  { value: "CSV import", label: "CSV import" },
+  { value: "Manual", label: "Manual tracking" }
+];
+
+const transactionCategoryOptions: SelectOption[] = [
+  { value: "Accounts Receivable", label: "Accounts Receivable" },
+  { value: "Bank Charges Expense", label: "Bank Charges Expense" },
+  { value: "Office Supplies Expense", label: "Office Supplies Expense" },
+  { value: "Payroll Clearing", label: "Payroll Clearing" }
+];
+
 const formatMoney = (value: number) =>
   new Intl.NumberFormat("en-PH", {
     currency: "PHP",
@@ -243,6 +263,55 @@ const formatMoney = (value: number) =>
   }).format(value);
 
 const formatAmountClass = (value: number) => (value < 0 ? "banking-amount-negative" : "banking-amount-positive");
+
+function BankingActionDialog({
+  children,
+  closeLabel,
+  CloseIcon,
+  description,
+  footerCopy,
+  onClose,
+  onSubmit,
+  submitLabel,
+  title
+}: {
+  children: ReactNode;
+  closeLabel: string;
+  CloseIcon: () => ReactNode;
+  description: string;
+  footerCopy?: string;
+  onClose: () => void;
+  onSubmit?: () => void;
+  submitLabel?: string;
+  title: string;
+}) {
+  return (
+    <div className="chart-standard-layer admin-audit-dialog-layer" role="dialog" aria-modal="true" aria-label={title}>
+      <button type="button" className="chart-standard-backdrop" aria-label={closeLabel} onClick={onClose} />
+      <section className="admin-audit-dialog banking-action-dialog">
+        <div className="chart-standard-dialog-head">
+          <div>
+            <strong>{title}</strong>
+            <p>{description}</p>
+          </div>
+          <button type="button" className="chart-standard-close" onClick={onClose} aria-label={closeLabel}>
+            <CloseIcon />
+          </button>
+        </div>
+        <div className="chart-standard-dialog-body">{children}</div>
+        <div className="chart-standard-dialog-footer banking-dialog-footer">
+          {footerCopy ? <span>{footerCopy}</span> : null}
+          <div className="banking-dialog-actions">
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={onClose}>Cancel</button>
+            {onSubmit && submitLabel ? (
+              <button type="button" className="chart-page-button chart-page-button-primary" onClick={onSubmit}>{submitLabel}</button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
 function BankingSummary({ accounts, transactions, reconciliations }: { accounts: BankAccountRecord[]; transactions: BankTransactionRecord[]; reconciliations: ReconciliationRecord[] }) {
   const bankBalance = accounts.reduce((total, account) => total + account.bankBalance, 0);
@@ -279,22 +348,28 @@ function BankingSummary({ accounts, transactions, reconciliations }: { accounts:
 function BankingOverview({
   accounts,
   companyName,
+  components,
   transactions,
   reconciliations
 }: {
   accounts: BankAccountRecord[];
   companyName: string;
+  components: SharedBankingComponents;
   transactions: BankTransactionRecord[];
   reconciliations: ReconciliationRecord[];
 }) {
+  const { CloseIcon } = components;
+  const [actionDialog, setActionDialog] = useState<BankingDialogAction | null>(null);
+  const uncategorizedCount = transactions.filter((transaction) => transaction.status === "Uncategorized").length;
+
   return (
     <div className="dashboard-content banking-workspace-view">
       <section className="admin-workspace-main">
         <div className="admin-table-header">
           <h1>Banking Overview</h1>
           <div className="admin-table-header-actions">
-            <button type="button" className="chart-page-button chart-page-button-ghost">Import CSV</button>
-            <button type="button" className="chart-page-button chart-page-button-primary">Review transactions</button>
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setActionDialog("import-statement")}>Import CSV</button>
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={() => setActionDialog("review-transactions")}>Review transactions</button>
           </div>
         </div>
 
@@ -335,13 +410,90 @@ function BankingOverview({
           </table>
         </div>
       </section>
+
+      {actionDialog === "import-statement" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close CSV import"
+          description="Preview a statement import before it creates bank lines. This is frontend-only for now."
+          footerCopy="Mock import only"
+          onClose={() => setActionDialog(null)}
+          onSubmit={() => setActionDialog(null)}
+          submitLabel="Queue import"
+          title="Import bank statement"
+        >
+          <div className="banking-dialog-grid">
+            <div className="banking-dialog-card">
+              <span>Source file</span>
+              <strong>BPI_operating_april.csv</strong>
+              <p>5 rows detected, 2 need category review, 1 possible duplicate.</p>
+            </div>
+            <div className="banking-dialog-card">
+              <span>Target account</span>
+              <strong>BPI Operating Account</strong>
+              <p>New lines will stay unposted until reviewed by accounting.</p>
+            </div>
+          </div>
+        </BankingActionDialog>
+      ) : null}
+
+      {actionDialog === "review-transactions" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close transaction review"
+          description="Use this queue to resolve imported lines before they affect the books."
+          footerCopy={`${uncategorizedCount} uncategorized lines`}
+          onClose={() => setActionDialog(null)}
+          onSubmit={() => setActionDialog(null)}
+          submitLabel="Open transaction queue"
+          title="Review bank transactions"
+        >
+          <div className="banking-review-list">
+            {transactions.filter((transaction) => transaction.status === "Uncategorized").map((transaction) => (
+              <div key={transaction.id} className="banking-review-item">
+                <div>
+                  <strong>{transaction.description}</strong>
+                  <span>{transaction.account} - {transaction.reference}</span>
+                </div>
+                <span className={formatAmountClass(transaction.amount)}>{formatMoney(transaction.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </BankingActionDialog>
+      ) : null}
     </div>
   );
 }
 
 function BankAccountsView({ accounts, components }: { accounts: BankAccountRecord[]; components: SharedBankingComponents }) {
-  const { CloseIcon, RowOpenIcon } = components;
+  const { CloseIcon, CustomSelect, RowOpenIcon, SetupField } = components;
+  const [bankAccounts, setBankAccounts] = useState(accounts);
   const [selectedAccount, setSelectedAccount] = useState<BankAccountRecord | null>(null);
+  const [actionDialog, setActionDialog] = useState<BankingDialogAction | null>(null);
+  const [accountDraft, setAccountDraft] = useState({
+    accountName: "Metrobank Tax Reserve",
+    bankBalance: "125000",
+    institution: "Metrobank",
+    status: "Manual"
+  });
+
+  const handleAddAccount = () => {
+    const bankBalance = Number(accountDraft.bankBalance) || 0;
+    const newAccount: BankAccountRecord = {
+      id: `bank-account-${Date.now()}`,
+      accountName: accountDraft.accountName.trim() || "New Bank Account",
+      bankBalance,
+      bookBalance: bankBalance,
+      currency: "PHP",
+      institution: accountDraft.institution.trim() || "Manual bank account",
+      lastUpdated: "Just now",
+      status: accountDraft.status as BankAccountStatus,
+      unresolved: 0
+    };
+
+    setBankAccounts((current) => [newAccount, ...current]);
+    setActionDialog(null);
+  };
 
   return (
     <div className="dashboard-content banking-workspace-view">
@@ -349,8 +501,8 @@ function BankAccountsView({ accounts, components }: { accounts: BankAccountRecor
         <div className="admin-table-header">
           <h1>Bank Accounts</h1>
           <div className="admin-table-header-actions">
-            <button type="button" className="chart-page-button chart-page-button-ghost">Import statement</button>
-            <button type="button" className="chart-page-button chart-page-button-primary">Add account</button>
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setActionDialog("import-statement")}>Import statement</button>
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={() => setActionDialog("add-account")}>Add account</button>
           </div>
         </div>
 
@@ -368,7 +520,7 @@ function BankAccountsView({ accounts, components }: { accounts: BankAccountRecor
               </tr>
             </thead>
             <tbody>
-              {accounts.map((account) => (
+              {bankAccounts.map((account) => (
                 <tr key={account.id} onClick={() => setSelectedAccount(account)}>
                   <td>
                     <div className="admin-primary-cell">
@@ -444,15 +596,87 @@ function BankAccountsView({ accounts, components }: { accounts: BankAccountRecor
           </section>
         </div>
       ) : null}
+
+      {actionDialog === "add-account" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close add account"
+          description="Create a frontend-only bank account record for the current workspace."
+          onClose={() => setActionDialog(null)}
+          onSubmit={handleAddAccount}
+          submitLabel="Add account"
+          title="Add bank account"
+        >
+          <div className="banking-form-grid">
+            <SetupField label="Account name" required>
+              <input
+                type="text"
+                value={accountDraft.accountName}
+                onChange={(event) => setAccountDraft((current) => ({ ...current, accountName: event.target.value }))}
+              />
+            </SetupField>
+            <SetupField label="Institution" required>
+              <input
+                type="text"
+                value={accountDraft.institution}
+                onChange={(event) => setAccountDraft((current) => ({ ...current, institution: event.target.value }))}
+              />
+            </SetupField>
+            <SetupField label="Opening balance" helper="For now this also sets the book balance.">
+              <input
+                type="number"
+                value={accountDraft.bankBalance}
+                onChange={(event) => setAccountDraft((current) => ({ ...current, bankBalance: event.target.value }))}
+              />
+            </SetupField>
+            <SetupField label="Import method">
+              <CustomSelect
+                ariaLabel="Choose bank import method"
+                value={accountDraft.status}
+                options={accountStatusOptions}
+                onChange={(value) => setAccountDraft((current) => ({ ...current, status: value }))}
+              />
+            </SetupField>
+          </div>
+        </BankingActionDialog>
+      ) : null}
+
+      {actionDialog === "import-statement" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close statement import"
+          description="Stage a statement file and review detected lines before posting."
+          footerCopy="CSV parsing will be connected later"
+          onClose={() => setActionDialog(null)}
+          onSubmit={() => setActionDialog(null)}
+          submitLabel="Stage import"
+          title="Import statement"
+        >
+          <div className="banking-dialog-grid">
+            <div className="banking-dialog-card">
+              <span>Detected columns</span>
+              <strong>Date, Description, Debit, Credit, Balance</strong>
+              <p>Ledgera will map these to bank lines in the next backend phase.</p>
+            </div>
+            <div className="banking-dialog-card">
+              <span>Review policy</span>
+              <strong>Do not post automatically</strong>
+              <p>Imported rows remain in Banking Transactions until matched, categorized, or excluded.</p>
+            </div>
+          </div>
+        </BankingActionDialog>
+      ) : null}
     </div>
   );
 }
 
 function BankTransactionsView({ components, initialTransactions }: { components: SharedBankingComponents; initialTransactions: BankTransactionRecord[] }) {
-  const { CustomSelect, SearchIcon } = components;
+  const { CloseIcon, CustomSelect, SearchIcon } = components;
   const [transactions, setTransactions] = useState(initialTransactions);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [transactionAction, setTransactionAction] = useState<TransactionActionDraft | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState("Bank Charges Expense");
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
@@ -464,6 +688,20 @@ function BankTransactionsView({ components, initialTransactions }: { components:
 
   const updateStatus = (id: string, status: BankTransactionStatus) => {
     setTransactions((current) => current.map((transaction) => (transaction.id === id ? { ...transaction, status } : transaction)));
+  };
+
+  const openTransactionAction = (transaction: BankTransactionRecord, status: BankTransactionStatus) => {
+    setSelectedCategory(status === "Matched" ? "Accounts Receivable" : "Bank Charges Expense");
+    setTransactionAction({ transaction, status });
+  };
+
+  const confirmTransactionAction = () => {
+    if (!transactionAction) {
+      return;
+    }
+
+    updateStatus(transactionAction.transaction.id, transactionAction.status);
+    setTransactionAction(null);
   };
 
   return (
@@ -498,40 +736,132 @@ function BankTransactionsView({ components, initialTransactions }: { components:
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td>{transaction.date}</td>
-                  <td>
-                    <div className="admin-primary-cell">
-                      <strong>{transaction.description}</strong>
-                      <span>{transaction.reference}</span>
-                    </div>
-                  </td>
-                  <td>{transaction.account}</td>
-                  <td className={formatAmountClass(transaction.amount)}>{formatMoney(transaction.amount)}</td>
-                  <td><span className={`admin-pill banking-status-${transaction.status.toLowerCase()}`}>{transaction.status}</span></td>
-                  <td>
-                    <div className="banking-row-actions">
-                      <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => updateStatus(transaction.id, "Matched")}>Match</button>
-                      <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => updateStatus(transaction.id, "Categorized")}>Categorize</button>
-                      <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => updateStatus(transaction.id, "Excluded")}>Exclude</button>
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td>{transaction.date}</td>
+                    <td>
+                      <div className="admin-primary-cell">
+                        <strong>{transaction.description}</strong>
+                        <span>{transaction.reference}</span>
+                      </div>
+                    </td>
+                    <td>{transaction.account}</td>
+                    <td className={formatAmountClass(transaction.amount)}>{formatMoney(transaction.amount)}</td>
+                    <td><span className={`admin-pill banking-status-${transaction.status.toLowerCase()}`}>{transaction.status}</span></td>
+                    <td>
+                      <div className="banking-row-actions">
+                        <button
+                          type="button"
+                          className="chart-page-button chart-page-button-ghost"
+                          disabled={transaction.status === "Matched"}
+                          onClick={() => openTransactionAction(transaction, "Matched")}
+                        >
+                          Match
+                        </button>
+                        <button
+                          type="button"
+                          className="chart-page-button chart-page-button-ghost"
+                          disabled={transaction.status === "Categorized"}
+                          onClick={() => openTransactionAction(transaction, "Categorized")}
+                        >
+                          Categorize
+                        </button>
+                        <button
+                          type="button"
+                          className="chart-page-button chart-page-button-ghost"
+                          disabled={transaction.status === "Excluded"}
+                          onClick={() => openTransactionAction(transaction, "Excluded")}
+                        >
+                          Exclude
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6}>
+                    <div className="chart-empty-state">
+                      <strong>No bank lines match the current filters.</strong>
+                      <p>Try another status or search by description, account, or reference.</p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
       </section>
+
+      {transactionAction ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close transaction action"
+          description="Confirm how this bank line should move through the review queue."
+          footerCopy={transactionAction.transaction.reference}
+          onClose={() => setTransactionAction(null)}
+          onSubmit={confirmTransactionAction}
+          submitLabel={`Mark as ${transactionAction.status.toLowerCase()}`}
+          title={`${transactionAction.status} transaction`}
+        >
+          <div className="banking-dialog-grid">
+            <div className="banking-dialog-card">
+              <span>Bank line</span>
+              <strong>{transactionAction.transaction.description}</strong>
+              <p>{transactionAction.transaction.account} - {formatMoney(transactionAction.transaction.amount)}</p>
+            </div>
+            <div className="banking-dialog-card">
+              <span>Review result</span>
+              <strong>{transactionAction.status}</strong>
+              <p>{transactionAction.status === "Excluded" ? "This line will be ignored in accounting reports." : "This line remains frontend-only until posting is connected."}</p>
+            </div>
+          </div>
+          {transactionAction.status !== "Excluded" ? (
+            <div className="banking-form-grid banking-form-grid-single">
+              <div className="setup-field">
+                <span className="setup-field-label">Target ledger account</span>
+                <CustomSelect
+                  ariaLabel="Choose transaction target account"
+                  value={selectedCategory}
+                  options={transactionCategoryOptions}
+                  onChange={setSelectedCategory}
+                />
+                <span className="setup-field-note">This records the intended accounting mapping for the next backend phase.</span>
+              </div>
+            </div>
+          ) : null}
+        </BankingActionDialog>
+      ) : null}
     </div>
   );
 }
 
-function BankRulesView() {
+function BankRulesView({ components }: { components: SharedBankingComponents }) {
+  const { CloseIcon, SetupField } = components;
   const [rules, setRules] = useState(bankRulesSeed);
+  const [actionDialog, setActionDialog] = useState<BankingDialogAction | null>(null);
+  const [ruleDraft, setRuleDraft] = useState({
+    condition: "Description contains transfer fee",
+    name: "Transfer fees",
+    target: "Bank Charges Expense"
+  });
 
   const toggleRule = (id: string) => {
     setRules((current) => current.map((rule) => (rule.id === id ? { ...rule, status: rule.status === "Active" ? "Inactive" : "Active" } : rule)));
+  };
+
+  const handleCreateRule = () => {
+    const newRule: BankRuleRecord = {
+      id: `bank-rule-${Date.now()}`,
+      condition: ruleDraft.condition.trim() || "Description contains keyword",
+      name: ruleDraft.name.trim() || "New bank rule",
+      status: "Active",
+      target: ruleDraft.target.trim() || "Uncategorized Clearing"
+    };
+
+    setRules((current) => [newRule, ...current]);
+    setActionDialog(null);
   };
 
   return (
@@ -540,7 +870,7 @@ function BankRulesView() {
         <div className="admin-table-header">
           <h1>Bank Rules</h1>
           <div className="admin-table-header-actions">
-            <button type="button" className="chart-page-button chart-page-button-primary">Create rule</button>
+            <button type="button" className="chart-page-button chart-page-button-primary" onClick={() => setActionDialog("create-rule")}>Create rule</button>
           </div>
         </div>
 
@@ -579,12 +909,50 @@ function BankRulesView() {
           </table>
         </div>
       </section>
+
+      {actionDialog === "create-rule" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close create rule"
+          description="Create a frontend-only rule that can be toggled in the rules table."
+          onClose={() => setActionDialog(null)}
+          onSubmit={handleCreateRule}
+          submitLabel="Create rule"
+          title="Create bank rule"
+        >
+          <div className="banking-form-grid">
+            <SetupField label="Rule name" required>
+              <input
+                type="text"
+                value={ruleDraft.name}
+                onChange={(event) => setRuleDraft((current) => ({ ...current, name: event.target.value }))}
+              />
+            </SetupField>
+            <SetupField label="Target account" required>
+              <input
+                type="text"
+                value={ruleDraft.target}
+                onChange={(event) => setRuleDraft((current) => ({ ...current, target: event.target.value }))}
+              />
+            </SetupField>
+            <SetupField label="Condition" helper="Keep it readable so reviewers understand why the rule matched.">
+              <input
+                type="text"
+                value={ruleDraft.condition}
+                onChange={(event) => setRuleDraft((current) => ({ ...current, condition: event.target.value }))}
+              />
+            </SetupField>
+          </div>
+        </BankingActionDialog>
+      ) : null}
     </div>
   );
 }
 
-function BankReconciliationView() {
+function BankReconciliationView({ components }: { components: SharedBankingComponents }) {
+  const { CloseIcon } = components;
   const [items, setItems] = useState(reconciliationSeed);
+  const [actionDialog, setActionDialog] = useState<BankingDialogAction | null>(null);
 
   const markReconciled = (id: string) => {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, difference: 0, bookBalance: item.statementBalance, status: "Reconciled" } : item)));
@@ -596,7 +964,7 @@ function BankReconciliationView() {
         <div className="admin-table-header">
           <h1>Bank Reconciliation</h1>
           <div className="admin-table-header-actions">
-            <button type="button" className="chart-page-button chart-page-button-ghost">Export reconciliation</button>
+            <button type="button" className="chart-page-button chart-page-button-ghost" onClick={() => setActionDialog("export-reconciliation")}>Export reconciliation</button>
           </div>
         </div>
 
@@ -638,6 +1006,32 @@ function BankReconciliationView() {
           </table>
         </div>
       </section>
+
+      {actionDialog === "export-reconciliation" ? (
+        <BankingActionDialog
+          CloseIcon={CloseIcon}
+          closeLabel="Close reconciliation export"
+          description="Preview the export package before backend file generation is connected."
+          footerCopy={`${items.length} reconciliation records`}
+          onClose={() => setActionDialog(null)}
+          onSubmit={() => setActionDialog(null)}
+          submitLabel="Prepare export"
+          title="Export reconciliation"
+        >
+          <div className="banking-dialog-grid">
+            <div className="banking-dialog-card">
+              <span>Included records</span>
+              <strong>{items.length} accounts</strong>
+              <p>{items.filter((item) => item.status === "Open").length} open, {items.filter((item) => item.status === "Reconciled").length} reconciled.</p>
+            </div>
+            <div className="banking-dialog-card">
+              <span>Export format</span>
+              <strong>CSV summary</strong>
+              <p>Account, statement date, balances, difference, and current status.</p>
+            </div>
+          </div>
+        </BankingActionDialog>
+      ) : null}
     </div>
   );
 }
@@ -652,12 +1046,12 @@ export function BankingWorkspace({ companyName, components, view }: BankingWorks
   }
 
   if (view === "bank-rules") {
-    return <BankRulesView />;
+    return <BankRulesView components={components} />;
   }
 
   if (view === "bank-reconciliation") {
-    return <BankReconciliationView />;
+    return <BankReconciliationView components={components} />;
   }
 
-  return <BankingOverview accounts={bankAccountsSeed} companyName={companyName} transactions={bankTransactionsSeed} reconciliations={reconciliationSeed} />;
+  return <BankingOverview accounts={bankAccountsSeed} companyName={companyName} components={components} transactions={bankTransactionsSeed} reconciliations={reconciliationSeed} />;
 }
