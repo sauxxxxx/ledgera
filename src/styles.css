@@ -7727,6 +7727,485 @@ input {
   gap: 10px;
 }
 
+.receivables-workspace-view .chart-accounts-summary {
+  margin: 0;
+}
+
+.receivables-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.receivables-panel-subhead {
+  padding: 0 18px 16px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.receivables-panel-subhead div {
+  display: grid;
+  gap: 4px;
+}
+
+.receivables-panel-subhead strong {
+  color: #232537;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.receivables-panel-subhead span {
+  color: #7f8599;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.receivables-panel-subhead > span {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(122, 92, 255, 0.1);
+  color: #6849f7;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.receivables-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.receivables-row-actions .chart-page-button {
+  min-height: 34px;
+  padding-inline: 10px;
+  font-size: 0.72rem;
+}
+
+.receivables-status-open,
+.receivables-status-scheduled {
+  background: #eef2ff;
+  color: #415fc2;
+}
+
+.receivables-status-partial,
+.receivables-status-follow-up {
+  background: #fff5df;
+  color: #b77912;
+}
+
+.receivables-status-overdue {
+  background: #fff0f0;
+  color: #c64b4b;
+}
+
+.receivables-status-paid {
+  background: #e8f7ef;
+  color: #258855;
+}
+
+.receivables-action-dialog {
+  width: min(680px, calc(100vw - 40px));
+}
+
+.receivables-form-grid,
+.receivables-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.receivables-dialog-card {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  gap: 8px;
+}
+
+.receivables-dialog-card span {
+  color: #8b91a5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.receivables-dialog-card strong {
+  color: #232537;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.receivables-dialog-card p {
+  margin: 0;
+  color: #6f768b;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.receivables-dialog-footer {
+  justify-content: space-between;
+}
+
+.receivables-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.receivables-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.accounting-workspace-view .chart-table tbody td {
+  vertical-align: top;
+}
+
+.accounting-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.accounting-row-actions .chart-page-button {
+  min-height: 34px;
+  padding-inline: 10px;
+  font-size: 0.72rem;
+}
+
+.accounting-status-draft {
+  background: #eef2ff;
+  color: #415fc2;
+}
+
+.accounting-status-posted,
+.accounting-status-reviewed {
+  background: #e8f7ef;
+  color: #258855;
+}
+
+.accounting-status-flagged {
+  background: #fff0f0;
+  color: #c64b4b;
+}
+
+.accounting-action-dialog {
+  width: min(700px, calc(100vw - 40px));
+}
+
+.accounting-form-grid,
+.accounting-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.accounting-form-grid .setup-field:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.accounting-dialog-card {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  gap: 8px;
+}
+
+.accounting-dialog-card span {
+  color: #8b91a5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.accounting-dialog-card strong {
+  color: #232537;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.accounting-dialog-card p {
+  margin: 0;
+  color: #6f768b;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.accounting-line-list {
+  display: grid;
+  gap: 10px;
+}
+
+.accounting-line-item {
+  padding: 12px 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.accounting-line-item strong {
+  color: #232537;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.accounting-line-item span {
+  color: #6f768b;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.accounting-dialog-footer {
+  justify-content: space-between;
+}
+
+.accounting-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.accounting-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reports-summary-row {
+  padding: 0 18px 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reports-summary-row div {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 5px;
+}
+
+.reports-summary-row span {
+  color: #7f8599;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.reports-summary-row strong {
+  color: #232537;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.reports-section-label {
+  padding: 18px 18px 10px;
+  color: #232537;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.reports-status-ready {
+  background: #e8f7ef;
+  color: #258855;
+}
+
+.reports-status-review {
+  background: #fff5df;
+  color: #b77912;
+}
+
+.reports-status-draft {
+  background: #eef2ff;
+  color: #415fc2;
+}
+
+.reports-action-dialog {
+  width: min(680px, calc(100vw - 40px));
+}
+
+.reports-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reports-dialog-card {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  gap: 8px;
+}
+
+.reports-dialog-card span {
+  color: #8b91a5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reports-dialog-card strong {
+  color: #232537;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.reports-dialog-card p {
+  margin: 0;
+  color: #6f768b;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.reports-dialog-footer {
+  justify-content: space-between;
+}
+
+.reports-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.reports-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.bir-summary-row {
+  padding: 0 18px 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bir-summary-row div {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  gap: 5px;
+}
+
+.bir-summary-row span {
+  color: #7f8599;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.bir-summary-row strong {
+  color: #232537;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.bir-status-ready,
+.bir-status-filed,
+.bir-status-computed {
+  background: #e8f7ef;
+  color: #258855;
+}
+
+.bir-status-review-due,
+.bir-status-review,
+.bir-status-override {
+  background: #fff5df;
+  color: #b77912;
+}
+
+.bir-status-draft {
+  background: #eef2ff;
+  color: #415fc2;
+}
+
+.bir-action-dialog {
+  width: min(680px, calc(100vw - 40px));
+}
+
+.bir-dialog-grid,
+.bir-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bir-dialog-card {
+  padding: 14px;
+  border: 1px solid rgba(31, 39, 55, 0.08);
+  border-radius: 5px;
+  background: rgba(250, 250, 252, 0.92);
+  display: grid;
+  gap: 8px;
+}
+
+.bir-dialog-card span {
+  color: #8b91a5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bir-dialog-card strong {
+  color: #232537;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.bir-dialog-card p {
+  margin: 0;
+  color: #6f768b;
+  font-size: 0.75rem;
+  line-height: 1.6;
+}
+
+.bir-dialog-footer {
+  justify-content: space-between;
+}
+
+.bir-dialog-footer > span {
+  color: #7f8599;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.bir-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 @media (max-width: 980px) {
   .sales-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7744,6 +8223,32 @@ input {
   .banking-panel-subhead {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .receivables-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .receivables-panel-subhead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .accounting-form-grid,
+  .accounting-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .accounting-form-grid .setup-field:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+
+  .reports-summary-row,
+  .reports-dialog-grid,
+  .bir-summary-row,
+  .bir-dialog-grid,
+  .bir-form-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -7814,6 +8319,88 @@ input {
 
   .banking-row-actions .chart-page-button {
     width: 100%;
+  }
+
+  .receivables-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .receivables-form-grid,
+  .receivables-dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .receivables-row-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .receivables-row-actions .chart-page-button,
+  .receivables-row-actions .chart-row-action {
+    width: 100%;
+  }
+
+  .receivables-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .receivables-dialog-actions {
+    width: 100%;
+  }
+
+  .receivables-dialog-actions .chart-page-button {
+    flex: 1;
+  }
+
+  .accounting-row-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .accounting-row-actions .chart-page-button,
+  .accounting-row-actions .chart-row-action {
+    width: 100%;
+  }
+
+  .accounting-line-item,
+  .accounting-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .accounting-dialog-actions {
+    width: 100%;
+  }
+
+  .accounting-dialog-actions .chart-page-button {
+    flex: 1;
+  }
+
+  .reports-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reports-dialog-actions {
+    width: 100%;
+  }
+
+  .reports-dialog-actions .chart-page-button {
+    flex: 1;
+  }
+
+  .bir-dialog-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .bir-dialog-actions {
+    width: 100%;
+  }
+
+  .bir-dialog-actions .chart-page-button {
+    flex: 1;
   }
 }
 

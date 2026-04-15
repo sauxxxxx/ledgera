@@ -1,9 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type CSSProperties, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { AdminWorkspaceRouter } from "./admin/AdminWorkspaceViews";
+import { AccountingWorkspace } from "./accounting/AccountingWorkspaceView";
 import { ChartOfAccountsWorkspace } from "./accounting/ChartOfAccountsView";
 import { BankingWorkspace } from "./banking/BankingWorkspaceView";
+import { BirComplianceWorkspace } from "./compliance/BirComplianceWorkspaceView";
 import { ClientsWorkspace } from "./master-data/ClientsView";
 import { EmployeesWorkspace } from "./master-data/EmployeesView";
+import { ReceivablesPayablesWorkspace } from "./receivables-payables/ReceivablesPayablesWorkspaceView";
+import { ReportsWorkspace } from "./reports/ReportsWorkspaceView";
 import { SalesBillingWorkspace } from "./sales/SalesBillingWorkspaceView";
 import { SuppliersWorkspace } from "./master-data/SuppliersView";
 
@@ -36,16 +40,34 @@ type WorkspaceView =
   | "suppliers"
   | "employees"
   | "chart-of-accounts"
+  | "general-journal-entry"
+  | "general-journal"
+  | "cash-receipts-journal"
+  | "cash-disbursements-journal"
+  | "sales-journal"
+  | "purchase-journal"
   | "sales-overview"
   | "client-packages"
   | "invoices"
   | "acknowledgment-receipts"
   | "payment-tracking"
+  | "receivables-overview"
+  | "accounts-receivable"
+  | "accounts-payable"
+  | "aging-reports"
   | "banking-overview"
   | "bank-accounts"
   | "bank-transactions"
   | "bank-rules"
   | "bank-reconciliation"
+  | "trial-balance"
+  | "income-statement"
+  | "balance-sheet"
+  | "cash-flow-statement"
+  | "report-exports"
+  | "bir-reports"
+  | "vat-compliance"
+  | "withholding-taxes"
   | "company-profile"
   | "users-roles"
   | "system-settings"
@@ -1141,9 +1163,10 @@ const sidebarSections: SidebarSection[] = [
         icon: "receivables",
         label: "Receivables & Payables",
         children: [
-          { label: "Accounts Receivable" },
-          { label: "Accounts Payable" },
-          { label: "Aging Reports" }
+          { id: "receivables-overview", label: "Overview" },
+          { id: "accounts-receivable", label: "Accounts Receivable" },
+          { id: "accounts-payable", label: "Accounts Payable" },
+          { id: "aging-reports", label: "Aging Reports" }
         ]
       },
       {
@@ -1163,12 +1186,12 @@ const sidebarSections: SidebarSection[] = [
         icon: "accounting",
         label: "Accounting",
         children: [
-          { label: "General Journal Entry" },
-          { label: "General Journal" },
-          { label: "Cash Receipts Journal" },
-          { label: "Cash Disbursements Journal" },
-          { label: "Sales Journal" },
-          { label: "Purchase Journal" }
+          { id: "general-journal-entry", label: "General Journal Entry" },
+          { id: "general-journal", label: "General Journal" },
+          { id: "cash-receipts-journal", label: "Cash Receipts Journal" },
+          { id: "cash-disbursements-journal", label: "Cash Disbursements Journal" },
+          { id: "sales-journal", label: "Sales Journal" },
+          { id: "purchase-journal", label: "Purchase Journal" }
         ]
       },
       {
@@ -1176,11 +1199,11 @@ const sidebarSections: SidebarSection[] = [
         icon: "reports",
         label: "Reports",
         children: [
-          { label: "Trial Balance" },
-          { label: "Income Statement" },
-          { label: "Balance Sheet" },
-          { label: "Cash Flow Statement" },
-          { label: "Exports" }
+          { id: "trial-balance", label: "Trial Balance" },
+          { id: "income-statement", label: "Income Statement" },
+          { id: "balance-sheet", label: "Balance Sheet" },
+          { id: "cash-flow-statement", label: "Cash Flow Statement" },
+          { id: "report-exports", label: "Exports" }
         ]
       },
       {
@@ -1197,9 +1220,9 @@ const sidebarSections: SidebarSection[] = [
         icon: "compliance",
         label: "BIR Compliance",
         children: [
-          { label: "BIR Reports" },
-          { label: "VAT" },
-          { label: "Withholding Taxes" }
+          { id: "bir-reports", label: "BIR Reports" },
+          { id: "vat-compliance", label: "VAT" },
+          { id: "withholding-taxes", label: "Withholding Taxes" }
         ]
       }
     ]
@@ -2740,6 +2763,23 @@ function CompanySetupScreen({
     }
 
     if (
+      activeWorkspaceView === "general-journal-entry" ||
+      activeWorkspaceView === "general-journal" ||
+      activeWorkspaceView === "cash-receipts-journal" ||
+      activeWorkspaceView === "cash-disbursements-journal" ||
+      activeWorkspaceView === "sales-journal" ||
+      activeWorkspaceView === "purchase-journal"
+    ) {
+      return (
+        <AccountingWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (
       activeWorkspaceView === "sales-overview" ||
       activeWorkspaceView === "client-packages" ||
       activeWorkspaceView === "invoices" ||
@@ -2756,6 +2796,21 @@ function CompanySetupScreen({
     }
 
     if (
+      activeWorkspaceView === "receivables-overview" ||
+      activeWorkspaceView === "accounts-receivable" ||
+      activeWorkspaceView === "accounts-payable" ||
+      activeWorkspaceView === "aging-reports"
+    ) {
+      return (
+        <ReceivablesPayablesWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (
       activeWorkspaceView === "banking-overview" ||
       activeWorkspaceView === "bank-accounts" ||
       activeWorkspaceView === "bank-transactions" ||
@@ -2764,6 +2819,36 @@ function CompanySetupScreen({
     ) {
       return (
         <BankingWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
+        />
+      );
+    }
+
+    if (
+      activeWorkspaceView === "trial-balance" ||
+      activeWorkspaceView === "income-statement" ||
+      activeWorkspaceView === "balance-sheet" ||
+      activeWorkspaceView === "cash-flow-statement" ||
+      activeWorkspaceView === "report-exports"
+    ) {
+      return (
+        <ReportsWorkspace
+          companyName={formData.workspaceName}
+          view={activeWorkspaceView}
+          components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon }}
+        />
+      );
+    }
+
+    if (
+      activeWorkspaceView === "bir-reports" ||
+      activeWorkspaceView === "vat-compliance" ||
+      activeWorkspaceView === "withholding-taxes"
+    ) {
+      return (
+        <BirComplianceWorkspace
           companyName={formData.workspaceName}
           view={activeWorkspaceView}
           components={{ CloseIcon, CustomSelect, RowOpenIcon, SearchIcon, SetupField }}
@@ -3343,6 +3428,17 @@ function DashboardShell({
     }
 
     if (
+      activeWorkspaceView === "general-journal-entry" ||
+      activeWorkspaceView === "general-journal" ||
+      activeWorkspaceView === "cash-receipts-journal" ||
+      activeWorkspaceView === "cash-disbursements-journal" ||
+      activeWorkspaceView === "sales-journal" ||
+      activeWorkspaceView === "purchase-journal"
+    ) {
+      nextGroupId = "accounting";
+    }
+
+    if (
       activeWorkspaceView === "sales-overview" ||
       activeWorkspaceView === "client-packages" ||
       activeWorkspaceView === "invoices" ||
@@ -3353,6 +3449,15 @@ function DashboardShell({
     }
 
     if (
+      activeWorkspaceView === "receivables-overview" ||
+      activeWorkspaceView === "accounts-receivable" ||
+      activeWorkspaceView === "accounts-payable" ||
+      activeWorkspaceView === "aging-reports"
+    ) {
+      nextGroupId = "receivables-payables";
+    }
+
+    if (
       activeWorkspaceView === "banking-overview" ||
       activeWorkspaceView === "bank-accounts" ||
       activeWorkspaceView === "bank-transactions" ||
@@ -3360,6 +3465,24 @@ function DashboardShell({
       activeWorkspaceView === "bank-reconciliation"
     ) {
       nextGroupId = "banking";
+    }
+
+    if (
+      activeWorkspaceView === "trial-balance" ||
+      activeWorkspaceView === "income-statement" ||
+      activeWorkspaceView === "balance-sheet" ||
+      activeWorkspaceView === "cash-flow-statement" ||
+      activeWorkspaceView === "report-exports"
+    ) {
+      nextGroupId = "reports";
+    }
+
+    if (
+      activeWorkspaceView === "bir-reports" ||
+      activeWorkspaceView === "vat-compliance" ||
+      activeWorkspaceView === "withholding-taxes"
+    ) {
+      nextGroupId = "bir-compliance";
     }
 
     setOpenGroupIds((current) => (current.includes(nextGroupId) ? current : [...current, nextGroupId]));
